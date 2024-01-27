@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 # Define an array of batch sizes
 batch_sizes=(128 256 512 1024 2048)
