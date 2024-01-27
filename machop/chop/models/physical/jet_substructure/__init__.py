@@ -81,6 +81,31 @@ class JSC_S(nn.Module):
             x = l(x)
         return x
 
+class JSC_Custom(nn.Module):
+    def __init__(self, info):
+        super(JSC_Custom, self).__init__()
+        in_features = info.num_features
+        num_classes = info.num_classes
+        self.seq_blocks = nn.Sequential(
+            # 1st LogicNets Layer
+            nn.BatchNorm1d(in_features),  # input_quant       # 0
+            nn.ReLU(in_features),                             # 1
+            nn.Linear(in_features, 32),  # linear             # 6
+            nn.BatchNorm1d(32),  # output_quant      # 3
+            nn.ReLU(32),                             # 4
+            nn.Dropout(0.2),                         # 5
+            nn.Linear(32, 16),  # linear             # 2
+            nn.BatchNorm1d(16),  # output_quant      # 7
+            nn.ReLU(16),                             # 8
+            nn.Dropout(0.2),                         # 5
+            nn.Linear(16, num_classes),  # linear              # 10
+            nn.BatchNorm1d(num_classes),  # output_quant       # 11
+            nn.ReLU(num_classes),                              # 12
+        )
+
+    def forward(self, x):
+        return self.seq_blocks(x)
+
 
 # Getters ------------------------------------------------------------------------------
 def get_jsc_toy(info):
@@ -94,3 +119,6 @@ def get_jsc_tiny(info):
 
 def get_jsc_s(info):
     return JSC_S(info)
+
+def get_jsc_custom(info):
+    return JSC_Custom(info)
