@@ -36,7 +36,7 @@ PHYSICAL_MODELS = {
     "jsc-custom": {
         "model": get_jsc_custom,
         "info": MaseModelInfo(
-            "jsc-s",
+            "jsc-custom",
             model_source="physical",
             task_type="physical",
             physical_data_point_classification=True,

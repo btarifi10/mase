@@ -1,0 +1,31 @@
+# basics
+model = "jsc-custom"
+dataset = "jsc"
+task = "cls"
+
+max_epochs = 5
+batch_size = 512
+learning_rate = 1e-2
+accelerator = "cpu"
+project = "jsc-custom"
+seed = 42
+log_every_n_steps = 5
+load_name = "./mase_output/jsc-custom_classification_jsc_2024-01-27/software/training_ckpts/best.ckpt"
+load_type = "pl"
+
+[passes.quantize]
+by = "type"
+[passes.quantize.default.config]
+name = "NA"
+[passes.quantize.linear.config]
+name = "integer"
+"data_in_width" = 8
+"data_in_frac_width" = 4
+"weight_width" = 8
+"weight_frac_width" = 4
+"bias_width" = 8
+"bias_frac_width" = 4
+[passes.quantize.relu.config]
+name = "integer"
+"data_in_width" = 8
+"data_in_frac_width" = 4
