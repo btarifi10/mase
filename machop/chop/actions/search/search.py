@@ -62,6 +62,7 @@ def search(
     # search preparation
     accelerator = parse_accelerator(accelerator)
     strategy_config, search_space_config = parse_search_config(search_config)
+    
     save_path.mkdir(parents=True, exist_ok=True)
 
     # load model if the save_name is provided
@@ -72,7 +73,6 @@ def search(
     # set up data module
     data_module.prepare_data()
     data_module.setup()
-
     # construct the search space
     logger.info("Building search space...")
     search_space_cls = get_search_space_cls(search_space_config["name"])
