@@ -4,6 +4,7 @@ from .quantization import (
     ManualHFModuleSearchSpaceMixedPrecisionPTQ,
     GraphSearchSpaceMixedPrecisionPTQ,
 )
+from .systolic import SystolicMappingSearchSpace
 from .base import SearchSpaceBase
 
 
@@ -12,6 +13,7 @@ SEARCH_SPACE_MAP = {
     "module/manual_hf/quantize/llm_mixed_precision_ptq": ManualHFModuleSearchSpaceMixedPrecisionPTQ,
     "brute_force": BruteForceSpace,
     "transform/linear_channel_multiplier": LinearChannelMultiplierSpace,
+    "graph/hardware/systolic_mapping": SystolicMappingSearchSpace,
 }
 
 
