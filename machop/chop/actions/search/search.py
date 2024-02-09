@@ -1,5 +1,6 @@
 import logging
 from os import PathLike
+from pprint import pprint
 
 import toml
 import torch
@@ -85,6 +86,8 @@ def search(
     )
     search_space.build_search_space()
 
+    # pprint(search_space.__dict__)
+    # exit()
     # construct a search strategy
     strategy_cls = get_search_strategy_cls(strategy_config["name"])
     strategy = strategy_cls(

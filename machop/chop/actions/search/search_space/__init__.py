@@ -1,4 +1,5 @@
 from .brute_force import BruteForceSpace
+from .transformation.linear import LinearChannelMultiplierSpace
 from .quantization import (
     ManualHFModuleSearchSpaceMixedPrecisionPTQ,
     GraphSearchSpaceMixedPrecisionPTQ,
@@ -10,6 +11,7 @@ SEARCH_SPACE_MAP = {
     "graph/quantize/mixed_precision_ptq": GraphSearchSpaceMixedPrecisionPTQ,
     "module/manual_hf/quantize/llm_mixed_precision_ptq": ManualHFModuleSearchSpaceMixedPrecisionPTQ,
     "brute_force": BruteForceSpace,
+    "transform/linear_channel_multiplier": LinearChannelMultiplierSpace,
 }
 
 

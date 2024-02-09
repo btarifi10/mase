@@ -1,17 +1,17 @@
 # basics
-model = "jsc-custom"
+model = "jsc-toy"
 dataset = "jsc"
 task = "cls"
 
-max_epochs = 5
-batch_size = 512
-learning_rate = 1e-2
+max_epochs = 20
+batch_size = 256
+learning_rate = 1e-3
 accelerator = "cpu"
-project = "jsc-custom-tpe-lab-3"
+project = "jsc-toy-search-layers-lab-4"
 seed = 42
 log_every_n_steps = 5
-load_name = "./mase_output/jsc-custom-lab-3/software/training_ckpts/best.ckpt"
-load_type = "pl"
+# load_name = "../mase_output/jsc-toy_layer-multiplication-search-lab-4/software/training_ckpts/best.ckpt"
+# load_type = "pl"
 
 [passes.quantize]
 by = "type"
@@ -25,46 +25,33 @@ name = "integer"
 "weight_frac_width" = 4
 "bias_width" = 8
 "bias_frac_width" = 4
-[passes.quantize.relu.config]
-name = "integer"
-"data_in_width" = 8
-"data_in_frac_width" = 4
 
 [search.search_space]
-name = "graph/quantize/mixed_precision_ptq"
+name = "transform/linear_channel_multiplier"
 
 [search.search_space.setup]
-by = "type"
+by = "name"
 
 [search.search_space.seed.default.config]
 # the only choice "NA" is used to indicate that layers are not quantized by default
 name = ["NA"]
 
-[search.search_space.seed.linear.config]
-# if search.search_space.setup.by = "type", this seed will be used to quantize all torch.nn.Linear/ F.linear
-name = ["integer"]
-# data_in_width = [4, 6, 8, 12, 16, 20, 24, 32]
-# data_in_frac_width=  [4, 6, 8, 12, 16, 20, 24, 32]
-# weight_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-# weight_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-# bias_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-# bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-data_in_width = [2, 4, 8, 16, 32]
-data_in_frac_width = ["NA"]
-weight_width = [2, 4, 8, 16, 32]
-weight_frac_width = ["NA"]
-bias_width = [2, 4, 8, 16, 32]
-bias_frac_width = ["NA"]
-
 [search.search_space.seed.seq_blocks_2.config]
 # if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
-name = ["integer"]
-data_in_width = [2, 4, 8, 16, 32]
-data_in_frac_width = ["NA"]
-weight_width = [2, 4, 8, 16, 32]
-weight_frac_width = ["NA"]
-bias_width = [2, 4, 8, 16, 32]
-bias_frac_width = ["NA"]
+name = ["output_only"]
+channel_multiplier = [1, 2, 4]
+
+[search.search_space.seed.seq_blocks_5.config]
+# if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
+name = ["output_only", "input_only", "both"]
+channel_multiplier = [1, 2, 4]
+input_multiplier = [1, 2, 4]
+output_multiplier = [1, 2, 4]
+
+[search.search_space.seed.seq_blocks_8.config]
+# if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
+name = ["input_only"]
+channel_multiplier = [1, 2, 4]
 
 [search.strategy]
 name = "optuna"
@@ -79,7 +66,7 @@ compare_to = 32 # compare to FP32
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 100
+n_trials = 1000
 timeout = 20000
 sampler = "tpe"
 # sum_scaled_metrics = true # single objective
