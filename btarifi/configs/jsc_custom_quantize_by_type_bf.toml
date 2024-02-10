@@ -3,14 +3,14 @@ model = "jsc-custom"
 dataset = "jsc"
 task = "cls"
 
-max_epochs = 50
-batch_size = 256
+max_epochs = 25
+batch_size = 128
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "jsc-custom-bf"
+project = "lab-3_search-bf"
 seed = 42
 log_every_n_steps = 5
-load_name = "./mase_output/jsc-custom-lab-3/software/training_ckpts/best.ckpt"
+load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
 load_type = "pl"
 
 [passes.quantize]
@@ -68,12 +68,12 @@ eval_mode = true
 data_loader = "val_dataloader"
 num_samples = 512
 
-[search.strategy.hw_runner.average_bitwidth]
-compare_to = 32 # compare to FP32
+[search.strategy.hw_runner.hw_dummy]
+# compare_to = 32 # compare to FP32
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 5000
+n_trials = 1000
 timeout = 20000
 sampler = "bruteforce"
 # sum_scaled_metrics = true # single objective
@@ -85,5 +85,5 @@ sum_scaled_metrics = false # multi objective
 # loss.direction = "minimize"
 accuracy.scale = 1.0
 accuracy.direction = "maximize"
-average_bitwidth.scale = 0.2
-average_bitwidth.direction = "minimize"
+# average_bitwidth.scale = 0.2
+# average_bitwidth.direction = "minimize"

@@ -7,11 +7,11 @@ max_epochs = 25
 batch_size = 256
 learning_rate = 1e-4
 accelerator = "cpu"
-project = "jsc-toy-lab-4"
+project = "lab-4_search-channel-multiplier"
 seed = 42
 log_every_n_steps = 5
-# load_name = "./mase_output/jsc-toy-lab-4/software/training_ckpts/best-v1.ckpt"
-# load_type = "pl"
+load_name = "./mase_output/jsc-toy-lab-4/software/training_ckpts/best-v1.ckpt"
+load_type = "pl"
 
 [passes.quantize]
 by = "type"
@@ -67,6 +67,9 @@ optimizer = "adam"
 learning_rate = 1e-4
 num_warmup_steps = 0
 
+[search.strategy.sw_runner.basic_computations]
+name = "total_flops"
+
 [search.strategy.hw_runner.hw_dummy]
 name = "hw_dummy"
 
@@ -84,5 +87,7 @@ sum_scaled_metrics = false # multi objective
 # loss.direction = "minimize"
 accuracy.scale = 1.0
 accuracy.direction = "maximize"
+total_flops.scale = 1.0
+total_flops.direction = "minimize"
 # average_bitwidth.scale = 0.2
 # average_bitwidth.direction = "minimize"

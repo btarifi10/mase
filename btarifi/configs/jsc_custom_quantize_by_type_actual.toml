@@ -3,11 +3,11 @@ model = "jsc-custom"
 dataset = "jsc"
 task = "cls"
 
-max_epochs = 25
-batch_size = 128
+max_epochs = 50
+batch_size = 256
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "lab-3_search-tpe"
+project = "lab-3_search-tpe-type"
 seed = 42
 log_every_n_steps = 5
 load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
@@ -30,7 +30,7 @@ name = "integer"
 name = "graph/quantize/mixed_precision_ptq"
 
 [search.search_space.setup]
-by = "name"
+by = "type"
 
 [search.search_space.seed.default.config]
 # the only choice "NA" is used to indicate that layers are not quantized by default
@@ -52,15 +52,15 @@ weight_frac_width = ["NA"]
 bias_width = [2, 4, 8, 16, 32]
 bias_frac_width = ["NA"]
 
-[search.search_space.seed.seq_blocks_2.config]
-# if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
-name = ["integer"]
-data_in_width = [4, 6, 8, 12, 16, 20, 24, 32]
-data_in_frac_width=  [4, 6, 8, 12, 16, 20, 24, 32]
-weight_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-weight_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-bias_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+# [search.search_space.seed.seq_blocks_2.config]
+# # if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
+# name = ["integer"]
+# data_in_width = [4, 6, 8, 12, 16, 20, 24, 32]
+# data_in_frac_width=  [4, 6, 8, 12, 16, 20, 24, 32]
+# weight_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+# weight_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+# bias_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+# bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
 
 [search.strategy]
 name = "optuna"
@@ -70,10 +70,10 @@ eval_mode = true
 data_loader = "val_dataloader"
 num_samples = 512
 
-# [search.strategy.sw_runner.basic_computations]
-# name="total_bitops"
-# data_loader = "val_dataloader"
-# num_samples = 512
+[search.strategy.sw_runner.basic_computations]
+name="total_bitops"
+data_loader = "val_dataloader"
+num_samples = 512
 
 [search.strategy.hw_runner.average_bitwidth]
 compare_to = 32 # compare to FP32
@@ -83,7 +83,7 @@ compare_to = 32 # compare to FP32
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 1000
+n_trials = 10
 timeout = 20000
 sampler = "tpe"
 # sum_scaled_metrics = true # single objective
@@ -95,6 +95,8 @@ sum_scaled_metrics = true # multi objective
 # loss.direction = "minimize"
 accuracy.scale = 1.0
 accuracy.direction = "maximize"
+total_bitops.scale = -0.000000005
+total_bitops.direction = "maximize"
 # total_bitops.scale = -0.000000005
 # total_bitops.direction = "maximize"
 # average_bitwidth.scale = 0.2

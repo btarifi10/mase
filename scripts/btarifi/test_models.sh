@@ -15,7 +15,7 @@ PROJECT_NAME=$3
 DIRECTORY="$MASE/mase_output/$PROJECT_NAME/software/training_ckpts"
 
 # Assign the second argument to PATTERN, default to '*.txt' if not provided
-PATTERN=${4:-"best"}
+PATTERN=${4:-"best.*ckpt"}
 
 FILES=$(ls "$DIRECTORY" | grep "$PATTERN")
 

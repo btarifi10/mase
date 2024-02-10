@@ -13,8 +13,8 @@ def analyse_flops_pass(graph: MaseGraph, silent=False):
         "Parameters",
         "Forward FLOPS",
         "Backward FLOPS",
-        "Input buffer size",
-        "Output buffer size",
+        "Forward bitops",
+        "Backward bitops"
     ]
 
     rows = []
@@ -32,7 +32,7 @@ def analyse_flops_pass(graph: MaseGraph, silent=False):
         except KeyError:
             in_data_precision = None
         try:
-            weight_precision = node.meta['mase'].parameters['common']['args']['weights']['precision']
+            weight_precision = node.meta['mase'].parameters['common']['args']['weight']['precision']
         except KeyError:
             weight_precision = None
         try:    
@@ -64,11 +64,15 @@ def analyse_flops_pass(graph: MaseGraph, silent=False):
             # TODO: add support for  functions
             node.meta["mase"].parameters["software"]["computations"] = {}
 
-        rows.append([node.name, mase_op, *(node.meta["mase"].parameters["software"]["computations"].values())])
-
+        data = node.meta["mase"].parameters["software"]["computations"]
+        if data:
+            rows.append([node.name, mase_op, data["total_parameters"], data["computations"],
+                data["backward_computations"], data["forward_bitops"], data["backward_bitops"]])
+        else:
+            rows.append([node.name, mase_op, None, None, None, None, None])
     if not silent:
         print("Computations summary:")
         print("---------------------")
         print(tabulate(rows, headers=headers, tablefmt="github"))
 
-    return graph
+    return graph, {}
