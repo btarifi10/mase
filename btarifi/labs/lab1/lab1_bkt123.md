@@ -29,7 +29,7 @@ The batch refers to the number of samples used in one iteration of training. Fig
 
 <figure>
   <img src="./lab1-batch-sizes.png"/>
-  <figcaption>Figure 1: Validation accuracy for different batch sizes</figcaption>
+  <figcaption><i>Figure 1: Validation accuracy for different batch sizes<i></figcaption>
 </figure>
 
 It is observed that increasing the batch size reduces model performance. While having a larger batch size means that each training iteration has a larger set of data to generalise on, it also means that less iterations can be done (since each epoch will be divided into a smaller number of batches). Having a smaller batch size also provides a noisier estimate of the gradient which will allow the optimisation function to get out of local minima and find a lower overall minima.
@@ -40,18 +40,21 @@ It is observed that increasing the batch size reduces model performance. While h
 An epoch refers to one complete pass through the dataset. Increasing the number of epochs leads to better generalisation, as too few epochs result in underfitting of the data. This is seen in Figure 2.
 <figure>
   <img src="./lab1-epochs.png"/>
-  <figcaption>Figure 2: Validation accuracy for different maximum epochs</figcaption>
+  <figcaption><i>Figure 2: Validation accuracy for different maximum epochs</i></figcaption>
 </figure>
+
 Increasing the number of epochs also results in slower training. Figure 2 shows that while the best performing model was trained with 100 epochs, 50 epochs produced a similar result and finished in half the time, which may be an acceptable trade-off. The model trained for 200 epochs stopped early due to the default timeout, but it can be seen it followed a similar trend to 200 epochs and would not have improved it much. Therefore, there is a maximal reasonable number of epochs to use where increasing it would lead to overfitting. This can be prevented by early-stopping.
 
 ### Learning rate
 > What is happening with a large learning and what is happening with a small learning rate and why? What is the relationship between learning rates and batch sizes?
 
 The learning rate refers to the rate at which gradients are updated during backpropagation in gradient descent. The results of training with different rates from $10^{-6}$ to $10^{-1}$ are shown in Figure 3.
+
 <figure>
   <img src="./lab1-lr.png"/>
-  <figcaption>Figure 3: Validation accuracy for different learning rates</figcaption>
+  <figcaption><i>Figure 3: Validation accuracy for different learning rates</i></figcaption>
 </figure>
+
 The learning rate of $10^{-4}$ outperforms the others by far. With the larger learning rates, the training can be unstable and oscillate, leading to missing minima. In contrast, the smaller rates do not converge fast enough to ever find the minima. The learning rate should be tuned to avoid these issues, and other methods can be used such as an adaptive learning rate based on the gradient values or a learning rate schedule which starts off high and progressively gets smaller.
 
 The learning rate can be related to the batch size through the gradient calculation. With a larger batch size, the gradient calculation is a smoother estimate and a larger learning rate can be used. However, a smaller batch size will have a noisy estimate and a large learning rate my result in instability.
