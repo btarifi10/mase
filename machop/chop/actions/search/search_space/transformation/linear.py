@@ -1,6 +1,6 @@
 # This is the search space for channel multipliers on linear layers.
 from copy import deepcopy
-from pprint import pprint
+from chop.passes.graph.analysis.add_metadata.add_software_metadata import add_software_metadata_analysis_pass
 
 from chop.passes.graph.transforms.layers.linear_multiplier import linear_multiplier_transform_pass
 from ..base import SearchSpaceBase
@@ -37,24 +37,28 @@ class LinearChannelMultiplierSpace(SearchSpaceBase):
 
     def rebuild_model(self, sampled_config, is_eval_mode: bool = True):
         # set train/eval mode before creating mase graph
-
         self.model.to(self.accelerator)
         if is_eval_mode:
             self.model.eval()
         else:
             self.model.train()
 
-        if self.mg is None:
-            assert self.model_info.is_fx_traceable, "Model must be fx traceable"
-            mg = MaseGraph(self.model)
-            mg, _ = init_metadata_analysis_pass(mg, None)
-            mg, _ = add_common_metadata_analysis_pass(
-                mg, {"dummy_in": self.dummy_input, "force_device_meta": False}
-            )
-            self.mg = mg
+        mg = MaseGraph(self.model)
+        mg, _ = init_metadata_analysis_pass(mg, None)
+        mg, _ = add_common_metadata_analysis_pass(
+            mg, {"dummy_in": self.dummy_input, "force_device_meta": False}
+        )
+        mg, _ = add_software_metadata_analysis_pass(mg, None)
+        self.mg = mg
         if sampled_config is not None:
-            pprint(sampled_config)
             mg, _ = linear_multiplier_transform_pass(self.mg, sampled_config)
+
+        # mg, _ = init_metadata_analysis_pass(mg, None)
+        # mg, _ = add_common_metadata_analysis_pass(
+        #     mg, {"dummy_in": self.dummy_input, "force_device_meta": False}
+        # )
+        # mg, _ = add_software_metadata_analysis_pass(mg, None)
+
         mg.model.to(self.accelerator)
         return mg
 
@@ -101,7 +105,7 @@ class LinearChannelMultiplierSpace(SearchSpaceBase):
                             choices[n_name] = deepcopy(seed["default"])
             case _:
                 raise ValueError(
-                    f"Unknown quantization by: {self.config['setup']['by']}"
+                    f"Unknown channel modification by: {self.config['setup']['by']}"
                 )
 
         # flatten the choices and choice_lengths

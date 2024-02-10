@@ -1,4 +1,5 @@
 # from .rl import StrategyRL
+from chop.actions.search.strategies.brute_force.brute_force import SearchStrategyBruteForce
 from .optuna import SearchStrategyOptuna
 from .base import SearchStrategyBase
 from .brute_force import BruteForceStrategy
@@ -6,7 +7,7 @@ from .brute_force import BruteForceStrategy
 SEARCH_STRATEGY_MAP = {
     # "rl": StrategyRL,
     "optuna": SearchStrategyOptuna,
-    "brute_force": BruteForceStrategy,
+    "brute_force": SearchStrategyBruteForce,
 }
 
 

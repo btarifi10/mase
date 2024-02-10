@@ -3,11 +3,11 @@ model = "jsc-custom"
 dataset = "jsc"
 task = "cls"
 
-max_epochs = 50
+max_epochs = 10
 batch_size = 256
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "jsc-custom-tpe-lab-3"
+project = "jsc-custom-bf-manual"
 seed = 42
 log_every_n_steps = 5
 load_name = "./mase_output/jsc-custom-lab-3/software/training_ckpts/best.ckpt"
@@ -25,6 +25,10 @@ name = "integer"
 "weight_frac_width" = 4
 "bias_width" = 8
 "bias_frac_width" = 4
+[passes.quantize.relu.config]
+name = "integer"
+"data_in_width" = 8
+"data_in_frac_width" = 4
 
 [search.search_space]
 name = "graph/quantize/mixed_precision_ptq"
@@ -39,18 +43,12 @@ name = ["NA"]
 [search.search_space.seed.linear.config]
 # if search.search_space.setup.by = "type", this seed will be used to quantize all torch.nn.Linear/ F.linear
 name = ["integer"]
-# data_in_width = [4, 6, 8, 12, 16, 20, 24, 32]
-# data_in_frac_width=  [4, 6, 8, 12, 16, 20, 24, 32]
-# weight_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-# weight_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-# bias_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-# bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
-data_in_width = [2, 4, 8, 16, 32]
-data_in_frac_width = ["NA"]
-weight_width = [2, 4, 8, 16, 32]
-weight_frac_width = ["NA"]
-bias_width = [2, 4, 8, 16, 32]
-bias_frac_width = ["NA"]
+data_in_width = [4, 6, 8, 12, 16, 20, 24, 32]
+data_in_frac_width=  [4, 6, 8, 12, 16, 20, 24, 32]
+weight_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+weight_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+bias_width =  [4, 6, 8, 12, 16, 20, 24, 32]
+bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
 
 [search.search_space.seed.seq_blocks_2.config]
 # if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
@@ -63,7 +61,7 @@ bias_width =  [4, 6, 8, 12, 16, 20, 24, 32]
 bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
 
 [search.strategy]
-name = "optuna"
+name = "brute_force"
 eval_mode = true
 
 [search.strategy.sw_runner.basic_evaluation]
@@ -75,9 +73,9 @@ compare_to = 32 # compare to FP32
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 5000
+n_trials = 100
 timeout = 20000
-sampler = "tpe"
+# sampler = "bruteforce"
 # sum_scaled_metrics = true # single objective
 # direction = "maximize"
 sum_scaled_metrics = false # multi objective

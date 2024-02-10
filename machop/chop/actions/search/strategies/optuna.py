@@ -53,8 +53,6 @@ class SearchStrategyOptuna(SearchStrategyBase):
                 sampler = optuna.samplers.NSGAIIISampler()
             case "qmc":
                 sampler = optuna.samplers.QMCSampler()
-            case "bruteforce":
-                sampler = optuna.samplers.BruteForceSampler()
             case _:
                 raise ValueError(f"Unknown sampler name: {name}")
         return sampler

@@ -1,5 +1,6 @@
 import logging
 from math import ceil
+from pprint import pprint
 from torch import nn
 from chop.passes.graph.utils import get_mase_op, get_mase_type, get_parent_name
 from chop.tools.logger import get_logger
@@ -11,10 +12,14 @@ logger.setLevel(logging.INFO)
 def instantiate_linear(in_features, out_features, bias):
     if bias is not None:
         bias = True
-    return nn.Linear(
-        in_features=in_features,
-        out_features=out_features,
-        bias=bias)
+    try:
+        return nn.Linear(
+            in_features=in_features,
+            out_features=out_features,
+            bias=bias)
+    except Exception as e:
+        print(f"Failed to instantiate linear layer with in_features={in_features}, out_features={out_features}, bias={bias}.")
+        raise e
 
 def instantiate_relu(in_features):
     return nn.ReLU(in_features)
@@ -38,8 +43,8 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
         else:
             config = pass_args.get(get_mase_op(node), default)['config']
 
-        name = config.get("name", None)
-        if name is not None:
+        config_name = config.get("name", None)
+        if config_name is not None:
             ori_module = graph.modules[node.target]
             if not isinstance(ori_module, nn.Linear):
                 raise ValueError(f"Node {node.name} is not a linear layer.")
@@ -47,14 +52,14 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
             in_features = ori_module.in_features
             out_features = ori_module.out_features
             bias = ori_module.bias
-            if name == "output_only" or name == "both":
+            if config_name == "output_only" or config_name == "both":
                 output_multiplier = config.get("output_multiplier", config.get("channel_multiplier"))
                 if not output_multiplier:
                     logger.warning(f"Could not find output_multiplier or channel_multiplier for node {node.name}. Using value of 1.")
                     output_multiplier = 1
                 out_features = ceil(out_features * output_multiplier)
-            elif name == "input_only" or name == "both":
-                input_multiplier = config.get("input_multiplier", config["channel_multiplier"])
+            if config_name == "input_only" or config_name == "both":
+                input_multiplier = config.get("input_multiplier", config.get("channel_multiplier"))
                 if not input_multiplier:
                     logger.warning(f"Could not find input_multiplier or channel_multiplier for node {node.name}. Using value of 1.")
                     input_multiplier = 1
@@ -64,7 +69,7 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
             # All the previous modules should be either Linear, ReLU, or BatchNorm1d
             # The batchnorm1d and relu layers should be resized to the new in_features
             # The previous linear layer's output should be scaled to match the new in_features
-            if name == "input_only" or name == "both":
+            if config_name == "input_only" or config_name == "both":
                 valid = False
                 prev_node = node.prev
                 prev_module = graph.modules.get(prev_node.target, None)
@@ -80,24 +85,24 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
                     while (not isinstance(prev_module, nn.Linear)):
                         if isinstance(prev_module, nn.ReLU):
                             new_prev_module = instantiate_relu(in_features)
-                            parent_name, name = get_parent_name(prev_node.target)
-                            setattr(graph.modules[parent_name], name, new_prev_module)
+                            parent_name, name_ = get_parent_name(prev_node.target)
+                            setattr(graph.modules[parent_name], name_, new_prev_module)
                         elif isinstance(prev_module, nn.BatchNorm1d):
                             new_prev_module = instantiate_batchnorm(in_features)
-                            parent_name, name = get_parent_name(prev_node.target)
-                            setattr(graph.modules[parent_name], name, new_prev_module)
+                            parent_name, name_ = get_parent_name(prev_node.target)
+                            setattr(graph.modules[parent_name], name_, new_prev_module)
                         prev_node = prev_node.prev
                         prev_module = graph.modules[prev_node.target]
                     assert isinstance(prev_module, nn.Linear)
                     new_prev_module = instantiate_linear(prev_module.in_features, in_features, prev_module.bias)
-                    parent_name, name = get_parent_name(prev_node.target)
-                    setattr(graph.modules[parent_name], name, new_prev_module)
+                    parent_name, name_ = get_parent_name(prev_node.target)
+                    setattr(graph.modules[parent_name], name_, new_prev_module)
                 else:
                     logger.warning(f"Node {node.name} is not connected to a linear layer on the input side. " + 
                                    "Skipping input transformation.")
                     in_features = ori_module.in_features
 
-            if name == "output_only" or name == "both":
+            if config_name == "output_only" or config_name == "both":
                 valid = False
                 next_node = node.next
                 next_module = graph.modules.get(next_node.target, None)
@@ -113,18 +118,18 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
                     while (not isinstance(next_module, nn.Linear)):
                         if isinstance(next_module, nn.ReLU):
                             new_next_module = instantiate_relu(out_features)
-                            parent_name, name = get_parent_name(next_node.target)
-                            setattr(graph.modules[parent_name], name, new_next_module)
+                            parent_name, name_ = get_parent_name(next_node.target)
+                            setattr(graph.modules[parent_name], name_, new_next_module)
                         elif isinstance(next_module, nn.BatchNorm1d):
                             new_next_module = instantiate_batchnorm(out_features)
-                            parent_name, name = get_parent_name(next_node.target)
-                            setattr(graph.modules[parent_name], name, new_next_module)
+                            parent_name, name_ = get_parent_name(next_node.target)
+                            setattr(graph.modules[parent_name], name_, new_next_module)
                         next_node = next_node.next
                         next_module = graph.modules[next_node.target]
                     assert isinstance(next_module, nn.Linear)
                     new_next_module = instantiate_linear(out_features, next_module.out_features, next_module.bias)
-                    parent_name, name = get_parent_name(next_node.target)
-                    setattr(graph.modules[parent_name], name, new_next_module)
+                    parent_name, name_ = get_parent_name(next_node.target)
+                    setattr(graph.modules[parent_name], name_, new_next_module)
                 else:
                     logger.warning(f"Node {node.name} is not connected to a linear layer on the output side." + 
                                    "Skipping output transformation.")
@@ -132,7 +137,7 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
 
              # Finally, set the new linear module.
             new_module = instantiate_linear(in_features, out_features, bias)
-            parent_name, name = get_parent_name(node.target)
-            setattr(graph.modules[parent_name], name, new_module)
+            parent_name, name_ = get_parent_name(node.target)
+            setattr(graph.modules[parent_name], name_, new_module)
 
     return graph, {}

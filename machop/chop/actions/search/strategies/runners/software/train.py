@@ -14,10 +14,14 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 
+from chop.ir.graph.mase_graph import MaseGraph
+
 from .base import SWRunnerBase
 
 
 def get_optimizer(model, optimizer: str, learning_rate, weight_decay=0.0):
+    if isinstance(model, MaseGraph):
+        model = model.model
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
         {
@@ -60,7 +64,7 @@ class RunnerBasicTrain(SWRunnerBase):
         self._setup_metric()
 
     def _setup_metric(self):
-        if self.model_info.is_vision_model:
+        if self.model_info.is_vision_model or self.model_info.is_physical_model:
             match self.task:
                 case "classification" | "cls":
                     self.metric = MulticlassAccuracy(
@@ -100,10 +104,15 @@ class RunnerBasicTrain(SWRunnerBase):
         raise NotImplementedError()
 
     def vision_cls_forward(self, batch, model):
-        raise NotImplementedError()
+        x, y = batch[0].to(self.accelerator), batch[1].to(self.accelerator)
+        logits = model(x)
+        loss = torch.nn.functional.cross_entropy(logits, y)
+        acc = self.metric(logits, y)
+        self.loss(loss)
+        return {"loss": loss, "accuracy": acc}
 
     def forward(self, task: str, batch: dict, model):
-        if self.model_info.is_vision_model:
+        if self.model_info.is_vision_model or self.model_info.is_physical_model:
             match self.task:
                 case "classification" | "cls":
                     loss = self.vision_cls_forward(batch, model)
@@ -147,6 +156,12 @@ class RunnerBasicTrain(SWRunnerBase):
         )
         num_batches = math.ceil(num_samples / data_module.batch_size)
 
+        # print("num_batches", num_batches)
+        # print("num_samples", num_samples)
+        # print("num_batches_per_epoch", num_batches_per_epoch)
+        # print("batch_size", data_module.batch_size)
+        # input()
+
         # ddp_sampler = DistributedSampler(data_module.train_dataset)
 
         train_dataloader = data_module.train_dataloader()
@@ -171,6 +186,12 @@ class RunnerBasicTrain(SWRunnerBase):
         grad_accumulation_steps = self.config.get("gradient_accumulation_steps", 1)
         assert grad_accumulation_steps > 0, "num_accumulation_steps must be > 0"
 
+        if isinstance(model, MaseGraph):
+            model = model.model
+
+        # print("num_batches", num_batches)
+        # print("train_dataloader", train_dataloader.dataset.__dict__)
+        # input()
         train_iter = iter(train_dataloader)
         for step_i in range(num_batches):
             if step_i > num_batches:
@@ -183,13 +204,16 @@ class RunnerBasicTrain(SWRunnerBase):
                 batch = next(train_iter)
 
             model.train()
-            loss_i = self.forward(self.task, batch, model)
+            loss_i = self.forward(self.task, batch, model)['loss']
             loss_i = loss_i / grad_accumulation_steps
+
             loss_i.backward()
 
             if (step_i + 1) % grad_accumulation_steps == 0 or step_i == num_batches - 1:
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
+
+            # print(f"step {step_i} loss: {loss_i.item()}")
 
         return self.compute()

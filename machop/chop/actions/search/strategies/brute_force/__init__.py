@@ -1,1 +1,1 @@
-from .brute_force_strategy import BruteForceStrategy
+from .brute_force import SearchStrategyBruteForce
