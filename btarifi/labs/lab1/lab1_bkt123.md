@@ -29,7 +29,7 @@ The batch refers to the number of samples used in one iteration of training. Fig
 
 <figure>
   <img src="./lab1-batch-sizes.png"/>
-  <figcaption><i>Figure 1: Validation accuracy for different batch sizes<i></figcaption>
+  <figcaption><i>Figure 1: Validation accuracy for different batch sizes</i></figcaption>
 </figure>
 
 It is observed that increasing the batch size reduces model performance. While having a larger batch size means that each training iteration has a larger set of data to generalise on, it also means that less iterations can be done (since each epoch will be divided into a smaller number of batches). Having a smaller batch size also provides a noisier estimate of the gradient which will allow the optimisation function to get out of local minima and find a lower overall minima.
