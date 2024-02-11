@@ -7,11 +7,11 @@ max_epochs = 25
 batch_size = 128
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "lab-3_search-bf"
+project = "lab-3_search-bf_v2"
 seed = 42
 log_every_n_steps = 5
-load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
-load_type = "pl"
+# load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
+# load_type = "pl"
 
 [passes.quantize]
 by = "type"
@@ -73,7 +73,7 @@ num_samples = 512
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 1000
+n_trials = 2000
 timeout = 20000
 sampler = "bruteforce"
 # sum_scaled_metrics = true # single objective

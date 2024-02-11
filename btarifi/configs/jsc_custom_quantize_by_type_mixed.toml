@@ -7,11 +7,11 @@ max_epochs = 50
 batch_size = 256
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "lab-3_computations-accuracy-search_by-name"
+project = "lab-3_computations-accuracy-search_by-name_v2"
 seed = 42
 log_every_n_steps = 5
-load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
-load_type = "pl"
+# load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
+# load_type = "pl"
 
 [passes.quantize]
 by = "type"
@@ -95,7 +95,7 @@ sum_scaled_metrics = true # multi objective
 # loss.direction = "minimize"
 accuracy.scale = 1.0
 accuracy.direction = "maximize"
-total_bitops.scale = -0.000000005
+total_bitops.scale = -0.0000000005
 total_bitops.direction = "maximize"
 # average_bitwidth.scale = 0.2
 # average_bitwidth.direction = "minimize"

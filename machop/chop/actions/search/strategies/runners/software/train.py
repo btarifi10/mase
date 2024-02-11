@@ -156,12 +156,6 @@ class RunnerBasicTrain(SWRunnerBase):
         )
         num_batches = math.ceil(num_samples / data_module.batch_size)
 
-        # print("num_batches", num_batches)
-        # print("num_samples", num_samples)
-        # print("num_batches_per_epoch", num_batches_per_epoch)
-        # print("batch_size", data_module.batch_size)
-        # input()
-
         # ddp_sampler = DistributedSampler(data_module.train_dataset)
 
         train_dataloader = data_module.train_dataloader()
@@ -189,9 +183,6 @@ class RunnerBasicTrain(SWRunnerBase):
         if isinstance(model, MaseGraph):
             model = model.model
 
-        # print("num_batches", num_batches)
-        # print("train_dataloader", train_dataloader.dataset.__dict__)
-        # input()
         train_iter = iter(train_dataloader)
         for step_i in range(num_batches):
             if step_i > num_batches:
@@ -213,7 +204,5 @@ class RunnerBasicTrain(SWRunnerBase):
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
-
-            # print(f"step {step_i} loss: {loss_i.item()}")
 
         return self.compute()

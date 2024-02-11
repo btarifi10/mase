@@ -152,18 +152,58 @@ Quantised weights:  tensor([[ 0.0000,  0.0000, -0.0000,  0.0000,  0.0000,  0.250
          -0.0000,  0.0000,  0.2500, -0.2500, -0.0000, -0.0000, -0.0000,  0.2500]],
        grad_fn=<SliceBackward0>)
 ```
-It is important to note that the quantised weights are not stored in the MASE metadata, [they are computed in the forward/backward passes](../../../machop/chop/passes/graph/transforms/quantize/quantized_modules/linear.py#L63) ([remote link](https://github.com/btarifi10/mase/machop/chop/passes/graph/transforms/quantize/quantized_modules/linear.py#L63)). As such, when printing the above weights the quantiser needed to be called (`module.w_quantizer(module.weight)`).
+It is important to note that the quantised weights are not stored in the MASE metadata, [they are computed in the forward/backward passes](../../../machop/chop/passes/graph/transforms/quantize/quantized_modules/linear.py#L63) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/passes/graph/transforms/quantize/quantized_modules/linear.py#L63)). As such, when printing the above weights the quantiser needed to be called (`module.w_quantizer(module.weight)`).
+
+### Transforms on the command line
+Like the other `train` and `test` actions, the `transform` can be done on the command line as follows:
+```
+./ch transform --config <path/to/toml/file>
+```
+
+For the quantisation pass on `jsc-custom`, the toml file is as follows:
+```toml
+# Basic parameters to do with the model and config
+model = "jsc-custom"
+dataset = "jsc"
+task = "cls"
+accelerator = "cpu"
+project = "lab-2_transform"
+seed = 42
+log_every_n_steps = 5
+load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
+load_type = "pl"
+
+# General training params, not for the transform
+max_epochs = 50 
+batch_size = 256
+learning_rate = 1e-3
+
+# Transform params
+[passes.quantize]
+by = "type"
+[passes.quantize.default.config]
+name = "NA"
+[passes.quantize.linear.config]
+name = "integer"
+"data_in_width" = 8
+"data_in_frac_width" = 4
+"weight_width" = 8
+"weight_frac_width" = 4
+"bias_width" = 8
+"bias_frac_width" = 4
+```
+
 
 ### Counting the number of FLOPs and BitOPs
 The number of floating point operations (FLOPs) is a metric used to evaluate a models computational performance and efficiency. Higher FLOPs indicate a more computationally intensive model which may not be desired in some contexts. BitOPs refers to the total number of bitwise operations which will be performed. This is important in the context of quantised networks as this metric can differentiate between the different quantisation schemes.
 
-A pass was written to calculate the total number of FLOPs and BitOPs in the network. The FLOPs were calculated using existing functions in the MASE codebase, such as in [calc_modules.py](https://github.com/DeepWok/mase/machop/chop/passes/graph/analysis/flop_estimator/calculator/calc_modules.py). However, this function itself cannot be run due to bugs in the `flop_estimator` module (see [linked issue](https://github.com/DeepWok/mase/issues/54)). The function was therefore copied into a separate module to be used ([link](../../../machop/chop/passes/graph/analysis/flops/calculate_flops.py) | [remote link](https://github.com/btarifi10/mase/machop/chop/passes/graph/analysis/flops/calculate_flops.py)).
+A pass was written to calculate the total number of FLOPs and BitOPs in the network. The FLOPs were calculated using existing functions in the MASE codebase, such as in [calc_modules.py](https://github.com/DeepWok/mase/tree/main/machop/chop/passes/graph/analysis/flop_estimator/calculator/calc_modules.py). However, this function itself cannot be run due to bugs in the `flop_estimator` module (see [linked issue](https://github.com/DeepWok/mase/issues/54)). The function was therefore copied into a separate module to be used ([link](../../../machop/chop/passes/graph/analysis/flops/calculate_flops.py) | [remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/passes/graph/analysis/flops/calculate_flops.py)).
 
 The number of forward FLOPs is calculated on a module-by-module basis, based on the mathematics and layer sizes, etc. The number of backward FLOPs is different as gradients are calculated, but is commonly taken to be twice the number of forward FLOPs [[1](lab2_bkt123.md#references)].
 
 The number of BitOPs is linked to the number of FLOPs as for each computation, there are BitOPs. The number of BitOPs for each layer is calculated by taking the parameter's bit-width (via its precision, after the quantisation pass) and multiplying it by the number of computations in that layer [[2](lab2_bkt123.md#references)]. For example, for the linear layer the number of BitOPs is `FLOPs * input_bitwidth * weight_bitwidth`.
 
-The pass is implemented as [`analyse_flops_pass()`](../../../machop/chop/passes/graph/analysis/flops/flops_pass.py) ([remote link](https://github.com/btarifi10/mase/machop/chop/passes/graph/analysis/flops/flops_pass.py)):
+The pass is implemented as [`analyse_flops_pass()`](../../../machop/chop/passes/graph/analysis/flops/flops_pass.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/passes/graph/analysis/flops/flops_pass.py)):
 ```python
 mg, _ = analyse_flops_pass(mg)
 ```

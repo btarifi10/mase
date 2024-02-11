@@ -63,7 +63,7 @@ The learning rate can be related to the batch size through the gradient calculat
 These three parameters (among others) should be tuned to provide the best learning, but no single parameter will determine how well a model performs.
 
 ## Network Implementation
-The `jsc-tiny` network has 117 parameters. A larger network, called `jsc-custom`, was designed with roughly 1.3k parameters as follows ([repo link](../../../machop/chop/models/physical/jet_substructure/__init__.py#L93) | [remote link](https://github.com/btarifi10/mase/machop/chop/models/physical/jet_substructure/__init__.py#L93)):
+The `jsc-tiny` network has 117 parameters. A larger network, called `jsc-custom`, was designed with roughly 1.3k parameters as follows ([repo link](../../../machop/chop/models/physical/jet_substructure/__init__.py#L93) | [remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/models/physical/jet_substructure/__init__.py#L93)):
 ```python
 class JSC_Custom(nn.Module):
     def __init__(self, info):
