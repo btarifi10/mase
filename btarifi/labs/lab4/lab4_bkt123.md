@@ -95,4 +95,16 @@ The above pass was then incorporated into a search space to be used with any of 
 
 The search space, called `LinearChannelMultiplierSpace` (with key `transform/linear_channel_multiplier`) inherits and implements the `SearchSpaceBase` and is implemented in [linear.py](../../../machop/chop/actions/search/search_space/transformation/linear.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/actions/search/search_space/transformation/linear.py)). It provides the total space of possible configurations based on the inputs in the `toml` file.
 
-The search was performed using the Optuna TPE strategy with the new `transform/linear_channel_multiplier` space. In order to actually evaluate the different networks, the search strategy needs to train the network during the search. This can be done using the [`basic_train` runner](../../../machop/chop/actions/search/strategies/runners/software/train.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/actions/search/strategies/runners/software/train.py)) runner. _However_, this runner was not functional.
+The search was performed using the Optuna TPE strategy with the new `transform/linear_channel_multiplier` space. In order to actually evaluate the different networks, the search strategy needs to train the network during the search. This can be done using the [`basic_train` runner](../../../machop/chop/actions/search/strategies/runners/software/train.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/actions/search/strategies/runners/software/train.py)) runner. _However_, this runner was not functional and a number of changes needed to be made before it could work (see diff [here](https://www.diffchecker.com/ZY2XiS0K/)).
+
+A search was performed using accuracy and FLOPs as the evaluating criteria. The search produced the following results:
+
+|    | number | software_metrics | hardware_metrics | scaled_metrics |
+|----| --- | --- | --- | --- |
+|  0 |       59 | {'loss': 0.919, 'accuracy': 0.681, 'total_flops': 832000.0, 'total_bitops': 833175552.0}   | {}                 | {'accuracy': 0.681, 'total_flops': 832000.0}  |
+|  1 |       64 | {'loss': 0.919, 'accuracy': 0.68, 'total_flops': 512512.0, 'total_bitops': 506019840.0}    | {}                 | {'accuracy': 0.68, 'total_flops': 512512.0}   |
+|  2 |       93 | {'loss': 0.919, 'accuracy': 0.68, 'total_flops': 352768.0, 'total_bitops': 342441984.0}    | {}                 | {'accuracy': 0.68, 'total_flops': 352768.0}   |
+|  3 |       99 | {'loss': 0.914, 'accuracy': 0.682, 'total_flops': 2355712.0, 'total_bitops': 2393456640.0} | {}                 | {'accuracy': 0.682, 'total_flops': 2355712.0} |
+
+All four of these networks had only the second linear layer's output and the third linear layer's input multiplied by 2, 4, or 8.
+

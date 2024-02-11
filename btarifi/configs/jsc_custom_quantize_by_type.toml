@@ -7,7 +7,7 @@ max_epochs = 25
 batch_size = 128
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "lab-3_search-tpe_v2"
+project = "lab-3_search-tpe_v4"
 seed = 42
 log_every_n_steps = 5
 # load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
@@ -68,7 +68,7 @@ eval_mode = true
 
 [search.strategy.sw_runner.basic_evaluation]
 data_loader = "val_dataloader"
-num_samples = 512
+num_samples = 2048
 
 # [search.strategy.sw_runner.basic_computations]
 # name="total_bitops"
@@ -83,7 +83,7 @@ compare_to = 32 # compare to FP32
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 2000
+n_trials = 1000
 timeout = 20000
 sampler = "tpe"
 # sum_scaled_metrics = true # single objective

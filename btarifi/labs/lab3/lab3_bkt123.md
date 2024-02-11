@@ -135,3 +135,8 @@ accuracy.direction = "maximize"
 total_bitops.scale = -0.0000000005
 total_bitops.direction = "maximize"
 ```
+
+Running this search with the Optuna TPE sampler produces the following result:
+|    |   number | software_metrics | hardware_metrics | scaled_metrics|
+|----|----------|------------------|------------------|-------|
+|  0 |       15 | {'loss': 1.605, 'accuracy': 0.233, 'total_flops': 1024512.0, 'total_bitops': 642859008.0} | {}                 | {'accuracy': 0.233, 'total_bitops': -0.321} |
