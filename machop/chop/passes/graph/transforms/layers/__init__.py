@@ -1,1 +1,2 @@
 from .linear_multiplier import linear_multiplier_transform_pass
+from .conv2d_multiplier import conv2d_multiplier_transform_pass

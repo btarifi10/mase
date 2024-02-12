@@ -10,8 +10,8 @@ accelerator = "cpu"
 project = "lab-3_search-bf_v4"
 seed = 42
 log_every_n_steps = 5
-# load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
-# load_type = "pl"
+load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
+load_type = "pl"
 
 [passes.quantize]
 by = "type"

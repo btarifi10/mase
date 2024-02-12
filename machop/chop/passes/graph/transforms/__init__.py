@@ -16,3 +16,5 @@ from .utils import (
 )
 
 from .dse import partition_to_multi_device_transform_pass
+
+from .layers import conv2d_multiplier_transform_pass, linear_multiplier_transform_pass

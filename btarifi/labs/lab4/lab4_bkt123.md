@@ -7,7 +7,7 @@
 ## Overview
 This lab provided an investigation into using the search in MASE to implement a network architecture search. A network architecture search can be done in many ways, such as changing layer dimensions or properties or even adding layers. This lab involves scaling layers in a linear network to find the best performing network.
 
-## Channel Multiplier Pass
+## Linear Channel Multiplier Pass
 A basic channel multiplier was initially done on the example `JSC_Three_Linear_Layers` network. 
 
 The transform works as follows:
@@ -90,7 +90,7 @@ Layer types: [
 ]
 ```
 
-## Channel Multiplier Search
+## Linear Channel Multiplier Search
 The above pass was then incorporated into a search space to be used with any of the search strategies. This will allow a search to evaluate different network architectures with different layer sizes to find the best performing network.
 
 The search space, called `LinearChannelMultiplierSpace` (with key `transform/linear_channel_multiplier`) inherits and implements the `SearchSpaceBase` and is implemented in [linear.py](../../../machop/chop/actions/search/search_space/transformation/linear.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/actions/search/search_space/transformation/linear.py)). It provides the total space of possible configurations based on the inputs in the `toml` file.
@@ -108,3 +108,10 @@ A search was performed using accuracy and FLOPs as the evaluating criteria. The 
 
 All four of these networks had only the second linear layer's output and the third linear layer's input multiplied by 2, 4, or 8.
 
+## Scaling the search to real networks
+To scale the search functionality to real networks, a similar pass and search space to the above linear channel setup was written for the VGG7 network (or any CNN). It operates in a similar manner to multiply the channel dimensions of the conv2d layers.
+
+The pass which does this is implemented in [`conv2d_multiplier_transform_pass.py`](../../../machop/chop/passes/graph/transforms/layers/conv2d_multiplier.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/passes/graph/transforms/layers/conv2d_multiplier.py)) and the search space (with key `transform/conv2d_channel_multiplier`) is implemented in [`conv2d.py`](../../../machop/chop/actions/search/search_space/transformation/conv2d.py) ([remote link](https://github.com/btarifi10/mase/tree/btarifi/dev/machop/chop/actions/search/search_space/transformation/conv2d.py)). The search_space can be utilised by any of the current strategies, and was tested with Optuna's TPE search. Due to time constraints, training was not conducted for many epochs and a small number of trials was used, but the search was successfully completed and had the following output:
+|    |   number | software_metrics | hardware_metrics | scaled_metrics  |
+|--- | -------- | ---------------- | ---------------- | --------------- |
+|  0 |       49 | {'loss': 1.767, 'accuracy': 0.352} | {} | {'accuracy': 0.352} |

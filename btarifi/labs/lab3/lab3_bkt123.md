@@ -53,13 +53,13 @@ The results are shown in Figure 1 below.
   <img src="./lab3-bars.png"/>
   <figcaption><i>Figure 1: Perfromance metrics for different quantisation configurations</i></figcaption>
 </figure>
-
+<br/>
 These results, however, are difficult to interpret. We can plot them in a different way, as shown in Figure 2:
 <figure>
   <img src="./lab3-heatmaps.png"/>
   <figcaption><i>Figure 2: Perfromance heatmaps for different quantisation configurations</i></figcaption>
 </figure>
-
+<br/>
 This is much more interpretable. For example, we can see that for the accuracy, the weight precision plays a bigger role than the input data precision; as such we may be able to quantize the input data and maintain a higher weight precision. From these results, and looking at the BitOPs and latency, we may decide that the configuration of quantizing the data to 8 bits and 4 fractional bits, i.e. `(8, 4)` while keeping the weight at `(16, 8)` is a good trade off between Accuracy and BitOPs.
 
 Note that the best accuracy here is less than 50% which is not performant. This is likely because the evaluation was done on the inference directly after quantisation, so training the model again before evaluation would improve this. This is known as Quantisation Aware Training. As a further recommendation, the model size is a metric which may provide value in making these decisions.
@@ -110,7 +110,15 @@ def sampler_map(self, name):
 ```
 
 ### Comparison
+The native brute force implementation was tested against Optuna's TPE and Optuna's brute force sampling searches and the results are shown in Figure 3.
 
+<figure>
+  <img src="./lab3-search-comparison.png"/>
+  <figcaption><i>Figure 3: Comparison between native brute force and Optuna methods</i></figcaption>
+</figure>
+<br/>
+
+We can see that Optuna's error initally rises while it is modelling distributions but rapidly decreases soon after. It is able to find a better performing configuration much faster than brute force methods, as the search space is too large for brute force methods to do so efficiently. While 0.45 error would not be considered small, it is likely because no training is done on the networks after the quantisation.
 
 ### Adding a FLOPs and BitOPs runner
 In order to evaluate the search space with metrics like those discussed above, a runner needs to be implemented. Based on the pass to count FLOPs and BitOPs which was implemented in Lab 2, a new runner called `basic_computation` was implemented. This can compute the total number of FLOPs (`total_flops`) or BitOPs (`total_bitops`) and use it in the evaluation. It is implemented by performing the analysis pass and then determining the total FLOPs and BitOPs.
@@ -136,7 +144,31 @@ total_bitops.scale = -0.0000000005
 total_bitops.direction = "maximize"
 ```
 
-Running this search with the Optuna TPE sampler produces the following result:
-|    |   number | software_metrics | hardware_metrics | scaled_metrics|
-|----|----------|------------------|------------------|-------|
-|  0 |       15 | {'loss': 1.605, 'accuracy': 0.233, 'total_flops': 1024512.0, 'total_bitops': 642859008.0} | {}                 | {'accuracy': 0.233, 'total_bitops': -0.321} |
+Running this search with the Optuna TPE sampler produces the following result: 
+
+|    |   number | software_metrics | hardware_metrics   | scaled_metrics |
+| --- | --- | --- | --- | --- |
+|  0 |      236 | {'loss': 1.029, 'accuracy': 0.635, 'total_flops': 1024512.0, 'total_bitops': 661733376.0} | {}                 | {'accuracy': 0.635, 'total_bitops': -0.331} |
+
+Figure 4 below shows the search errors and we can see that indeed, trial 236 is the minimum error for the TPE search.
+
+<figure>
+  <img src="./lab3-mixed-search.png"/>
+  <figcaption><i>Figure 3: Comparison between native brute force and Optuna methods</i></figcaption>
+</figure>
+<br/>
+
+The trial which achieved this has the following configuration:
+```json
+"seq_blocks_2":{
+    "config":{
+        "name":"integer",
+        "data_in_width":4,
+        "data_in_frac_width":4,
+        "weight_width":8,
+        "weight_frac_width":8,
+        "bias_width":24,
+        "bias_frac_width":8
+    }
+}
+```

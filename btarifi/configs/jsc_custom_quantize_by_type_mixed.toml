@@ -7,7 +7,7 @@ max_epochs = 50
 batch_size = 256
 learning_rate = 1e-3
 accelerator = "cpu"
-project = "lab-3_computations-accuracy-search_by-name_v3"
+project = "lab-3_computations-accuracy-search_by-name_v4"
 seed = 42
 log_every_n_steps = 5
 load_name = "./mase_output/lab-1_jsc-custom/software/training_ckpts/best.ckpt"
@@ -64,7 +64,17 @@ bias_frac_width =  [4, 6, 8, 12, 16, 20, 24, 32]
 
 [search.strategy]
 name = "optuna"
-eval_mode = true
+eval_mode = false
+
+[search.strategy.sw_runner.basic_train]
+data_loader = "train_dataloader"
+num_samples = 2048
+# name = "accuracy"
+max_epochs = 5
+lr_scheduler = "linear"
+optimizer = "adam"
+learning_rate = 1e-4
+num_warmup_steps = 0
 
 [search.strategy.sw_runner.basic_evaluation]
 data_loader = "val_dataloader"

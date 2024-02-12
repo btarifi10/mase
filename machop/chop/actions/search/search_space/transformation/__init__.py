@@ -1,1 +1,2 @@
 from .linear import LinearChannelMultiplierSpace
+from .conv2d import Conv2dChannelMultiplierSpace

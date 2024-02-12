@@ -9,25 +9,28 @@ from chop.tools.logger import get_logger
 logger = get_logger("chop")
 logger.setLevel(logging.INFO)
 
-def instantiate_linear(in_features, out_features, bias):
+def instantiate_conv2d(in_channels, out_channels, bias, stride, kernel_size, padding):
     if bias is not None:
         bias = True
-    try:
-        return nn.Linear(
-            in_features=in_features,
-            out_features=out_features,
-            bias=bias)
-    except Exception as e:
-        print(f"Failed to instantiate linear layer with in_features={in_features}, out_features={out_features}, bias={bias}.")
-        raise e
+    return nn.Conv2d(
+        in_channels=in_channels,
+        out_channels=out_channels,
+        stride=stride,
+        kernel_size=kernel_size,
+        padding=padding,
+        bias=bias)
+    
 
-def instantiate_relu(in_features):
-    return nn.ReLU(in_features)
+def instantiate_relu():
+    return nn.ReLU()
 
-def instantiate_batchnorm(in_features):
-    return nn.BatchNorm1d(in_features)
+def instantiate_batchnorm(num_features, momentum=0.9):
+    return nn.BatchNorm2d(
+        num_features=num_features,
+        momentum=momentum
+    )
 
-def linear_multiplier_transform_pass(graph, pass_args=None):
+def conv2d_multiplier_transform_pass(graph, pass_args=None):
     default = pass_args.pop('default', None)
     if default is None:
         raise ValueError(f"default value must be provided.")
@@ -38,11 +41,13 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
 
     original_graph_dims = {}
     for node in graph.fx_graph.nodes:
-        if graph.modules.get(node.target) and isinstance(graph.modules[node.target], nn.Linear):
+        if graph.modules.get(node.target) and isinstance(graph.modules[node.target], nn.Conv2d):
             original_graph_dims[node.name] = {
-                "in_features": graph.modules[node.target].in_features,
-                "out_features": graph.modules[node.target].out_features,
+                "in_channels": graph.modules[node.target].in_channels,
+                "out_channels": graph.modules[node.target].out_channels,
             }
+
+    print(original_graph_dims)
 
     for node in graph.fx_graph.nodes:
         i += 1
@@ -55,35 +60,40 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
         config_name = config.get("name", None)
         if config_name is not None:
             ori_module = graph.modules[node.target]
-            if not isinstance(ori_module, nn.Linear):
-                raise ValueError(f"Node {node.name} is not a linear layer.")
+            if not isinstance(ori_module, nn.Conv2d):
+                print(ori_module)
+                raise ValueError(f"Node {node.name} is not a Conv2d layer.")
 
-            in_features = original_graph_dims[node.name]['in_features']
-            out_features = original_graph_dims[node.name]['out_features']
+            in_channels = original_graph_dims[node.name]['in_channels']
+            out_channels = original_graph_dims[node.name]['in_channels']
             bias = ori_module.bias
+            stride = ori_module.stride
+            kernel_size = ori_module.kernel_size
+            padding = ori_module.padding
+
             if config_name == "output_only" or config_name == "both":
                 output_multiplier = config.get("output_multiplier", config.get("channel_multiplier"))
                 if not output_multiplier:
                     logger.warning(f"Could not find output_multiplier or channel_multiplier for node {node.name}. Using value of 1.")
                     output_multiplier = 1
-                out_features = ceil(out_features * output_multiplier)
+                out_channels = ceil(out_channels * output_multiplier)
             if config_name == "input_only" or config_name == "both":
                 input_multiplier = config.get("input_multiplier", config.get("channel_multiplier"))
                 if not input_multiplier:
                     logger.warning(f"Could not find input_multiplier or channel_multiplier for node {node.name}. Using value of 1.")
                     input_multiplier = 1
-                in_features = ceil(in_features * input_multiplier)
+                in_channels = ceil(in_channels * input_multiplier)
 
-            # Find the previous linear module
-            # All the previous modules should be either Linear, ReLU, or BatchNorm1d
-            # The batchnorm1d and relu layers should be resized to the new in_features
-            # The previous linear layer's output should be scaled to match the new in_features
+            # Find the previous Conv2d module
+            # All the previous modules should be either Conv2d, ReLU, or BatchNorm1d
+            # The batchnorm1d and relu layers should be resized to the new in_channels
+            # The previous conv2d layer's output should be scaled to match the new in_channels
             if config_name == "input_only" or config_name == "both":
                 valid = False
                 prev_node = node.prev
                 prev_module = graph.modules.get(prev_node.target, None)
                 while (prev_node and prev_module and not valid):
-                    if isinstance(prev_module, nn.Linear):
+                    if isinstance(prev_module, nn.Conv2d):
                         valid = True
                     prev_node = prev_node.prev
                     prev_module = graph.modules.get(prev_node.target, None)
@@ -91,32 +101,39 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
                 if valid:
                     prev_node = node.prev
                     prev_module = graph.modules[prev_node.target]
-                    while (not isinstance(prev_module, nn.Linear)):
+                    while (not isinstance(prev_module, nn.Conv2d)):
                         if isinstance(prev_module, nn.ReLU):
-                            new_prev_module = instantiate_relu(in_features)
+                            new_prev_module = instantiate_relu()
                             parent_name, name_ = get_parent_name(prev_node.target)
                             setattr(graph.modules[parent_name], name_, new_prev_module)
-                        elif isinstance(prev_module, nn.BatchNorm1d):
-                            new_prev_module = instantiate_batchnorm(in_features)
+                        elif isinstance(prev_module, nn.BatchNorm2d):
+                            new_prev_module = instantiate_batchnorm(in_channels, prev_module.momentum)
                             parent_name, name_ = get_parent_name(prev_node.target)
                             setattr(graph.modules[parent_name], name_, new_prev_module)
                         prev_node = prev_node.prev
                         prev_module = graph.modules[prev_node.target]
-                    assert isinstance(prev_module, nn.Linear)
-                    new_prev_module = instantiate_linear(prev_module.in_features, in_features, prev_module.bias)
+                    assert isinstance(prev_module, nn.Conv2d)
+                    new_prev_module = instantiate_conv2d(
+                        prev_module.in_channels,
+                        in_channels,
+                        prev_module.bias,
+                        prev_module.stride,
+                        prev_module.kernel_size,
+                        prev_module.padding
+                    )
                     parent_name, name_ = get_parent_name(prev_node.target)
                     setattr(graph.modules[parent_name], name_, new_prev_module)
                 else:
-                    logger.warning(f"Node {node.name} is not connected to a linear layer on the input side. " + 
+                    logger.warning(f"Node {node.name} is not connected to a conv2d layer on the input side. " + 
                                    "Skipping input transformation.")
-                    in_features = original_graph_dims[node.name]['in_features']
+                    in_channels = original_graph_dims[node.name]['in_channels']
 
             if config_name == "output_only" or config_name == "both":
                 valid = False
                 next_node = node.next
                 next_module = graph.modules.get(next_node.target, None)
                 while (next_node and not valid):
-                    if isinstance(next_module, nn.Linear):
+                    if isinstance(next_module, nn.Conv2d):
                         valid = True
                     next_node = next_node.prev
                     next_module = graph.modules.get(next_node.target, None)
@@ -124,28 +141,35 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
                 if valid:
                     next_node = node.next
                     next_module = graph.modules[next_node.target]
-                    while (not isinstance(next_module, nn.Linear)):
+                    while (not isinstance(next_module, nn.Conv2d)):
                         if isinstance(next_module, nn.ReLU):
-                            new_next_module = instantiate_relu(out_features)
+                            new_next_module = instantiate_relu()
                             parent_name, name_ = get_parent_name(next_node.target)
                             setattr(graph.modules[parent_name], name_, new_next_module)
-                        elif isinstance(next_module, nn.BatchNorm1d):
-                            new_next_module = instantiate_batchnorm(out_features)
+                        elif isinstance(next_module, nn.BatchNorm2d):
+                            new_next_module = instantiate_batchnorm(out_channels, next_module.momentum)
                             parent_name, name_ = get_parent_name(next_node.target)
                             setattr(graph.modules[parent_name], name_, new_next_module)
                         next_node = next_node.next
                         next_module = graph.modules[next_node.target]
-                    assert isinstance(next_module, nn.Linear)
-                    new_next_module = instantiate_linear(out_features, next_module.out_features, next_module.bias)
+                    assert isinstance(next_module, nn.Conv2d)
+                    new_next_module = instantiate_conv2d(
+                        out_channels,
+                        next_module.out_channels,
+                        next_module.bias,
+                        next_module.stride,
+                        next_module.kernel_size,
+                        next_module.padding
+                    )
                     parent_name, name_ = get_parent_name(next_node.target)
                     setattr(graph.modules[parent_name], name_, new_next_module)
                 else:
-                    logger.warning(f"Node {node.name} is not connected to a linear layer on the output side." + 
+                    logger.warning(f"Node {node.name} is not connected to a conv2d layer on the output side." + 
                                    "Skipping output transformation.")
-                    out_features = original_graph_dims[node.name]['out_features']
+                    out_channels = original_graph_dims[node.name]['out_channels']
 
-             # Finally, set the new linear module.
-            new_module = instantiate_linear(in_features, out_features, bias)
+             # Finally, set the new conv2 module.
+            new_module = instantiate_conv2d(in_channels, out_channels, bias, stride, kernel_size, padding)
             parent_name, name_ = get_parent_name(node.target)
             setattr(graph.modules[parent_name], name_, new_module)
 
