@@ -94,6 +94,8 @@ class SearchStrategyOptuna(SearchStrategyBase):
         is_eval_mode = self.config.get("eval_mode", True)
         model = search_space.rebuild_model(sampled_config, is_eval_mode)
 
+        print(model.__dict__)
+
         software_metrics = self.compute_software_metrics(
             model, sampled_config, is_eval_mode
         )

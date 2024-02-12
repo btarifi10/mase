@@ -1,5 +1,6 @@
 # This is the search space for channel multipliers on linear layers.
 from copy import deepcopy
+from pprint import pprint
 from chop.passes.graph.analysis.add_metadata.add_software_metadata import add_software_metadata_analysis_pass
 
 from chop.passes.graph.transforms.layers.conv2d_multiplier import conv2d_multiplier_transform_pass
@@ -42,7 +43,8 @@ class Conv2dChannelMultiplierSpace(SearchSpaceBase):
             self.model.eval()
         else:
             self.model.train()
-
+        if sampled_config:
+            pprint(sampled_config)
         mg = MaseGraph(self.model)
         mg, _ = init_metadata_analysis_pass(mg, None)
         mg, _ = add_common_metadata_analysis_pass(

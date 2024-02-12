@@ -1,6 +1,5 @@
 import logging
 from math import ceil
-from pprint import pprint
 from torch import nn
 from chop.passes.graph.utils import deepcopy_mase_graph, get_mase_op, get_mase_type, get_parent_name
 from chop.tools.logger import get_logger
@@ -47,8 +46,6 @@ def conv2d_multiplier_transform_pass(graph, pass_args=None):
                 "out_channels": graph.modules[node.target].out_channels,
             }
 
-    print(original_graph_dims)
-
     for node in graph.fx_graph.nodes:
         i += 1
         # if node name is not matched, it won't be tracked
@@ -61,11 +58,10 @@ def conv2d_multiplier_transform_pass(graph, pass_args=None):
         if config_name is not None:
             ori_module = graph.modules[node.target]
             if not isinstance(ori_module, nn.Conv2d):
-                print(ori_module)
                 raise ValueError(f"Node {node.name} is not a Conv2d layer.")
 
             in_channels = original_graph_dims[node.name]['in_channels']
-            out_channels = original_graph_dims[node.name]['in_channels']
+            out_channels = original_graph_dims[node.name]['out_channels']
             bias = ori_module.bias
             stride = ori_module.stride
             kernel_size = ori_module.kernel_size
@@ -83,6 +79,10 @@ def conv2d_multiplier_transform_pass(graph, pass_args=None):
                     logger.warning(f"Could not find input_multiplier or channel_multiplier for node {node.name}. Using value of 1.")
                     input_multiplier = 1
                 in_channels = ceil(in_channels * input_multiplier)
+
+            # if in_channels == ori_module.in_channels or out_channels == ori_module.out_channels:
+            #     # Already matching probably due to being transformed, we can skip
+            #     pass
 
             # Find the previous Conv2d module
             # All the previous modules should be either Conv2d, ReLU, or BatchNorm1d
@@ -124,7 +124,7 @@ def conv2d_multiplier_transform_pass(graph, pass_args=None):
                     parent_name, name_ = get_parent_name(prev_node.target)
                     setattr(graph.modules[parent_name], name_, new_prev_module)
                 else:
-                    logger.warning(f"Node {node.name} is not connected to a conv2d layer on the input side. " + 
+                    logger.info(f"Node {node.name} is not connected to a conv2d layer on the input side. " + 
                                    "Skipping input transformation.")
                     in_channels = original_graph_dims[node.name]['in_channels']
 
@@ -164,7 +164,7 @@ def conv2d_multiplier_transform_pass(graph, pass_args=None):
                     parent_name, name_ = get_parent_name(next_node.target)
                     setattr(graph.modules[parent_name], name_, new_next_module)
                 else:
-                    logger.warning(f"Node {node.name} is not connected to a conv2d layer on the output side." + 
+                    logger.info(f"Node {node.name} is not connected to a conv2d layer on the output side." + 
                                    "Skipping output transformation.")
                     out_channels = original_graph_dims[node.name]['out_channels']
 

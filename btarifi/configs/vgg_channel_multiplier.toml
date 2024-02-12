@@ -7,7 +7,7 @@ max_epochs = 25
 batch_size = 256
 learning_rate = 1e-4
 accelerator = "cpu"
-project = "lab-4_vgg-search-channel-multiplier_v3"
+project = "lab-4_vgg-search-channel-multiplier_v4"
 seed = 42
 log_every_n_steps = 5
 # load_name = "./mase_output/jsc-toy-lab-4/software/training_ckpts/best-v1.ckpt"
@@ -26,22 +26,17 @@ name = ["NA"]
 [search.search_space.seed.feature_layers_1.config]
 # if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
 name = ["output_only"]
-channel_multiplier = [1, 2]
+channel_multiplier = [2, 4]
 
 [search.search_space.seed.feature_layers_3.config]
 # if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
 name = ["both"]
-channel_multiplier = [1, 2]
+channel_multiplier = [2, 4]
 
 [search.search_space.seed.feature_layers_7.config]
 # if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
-name = ["both"]
-channel_multiplier = [1, 2]
-
-[search.search_space.seed.feature_layers_10.config]
-# if search.search_space.setup.by = "name", this seed will be used to quantize the mase graph node with name "seq_blocks_2"
 name = ["input_only"]
-channel_multiplier = [1, 2]
+channel_multiplier = [2, 4]
 
 [search.strategy]
 name = "optuna"
@@ -50,8 +45,8 @@ eval_mode = false
 [search.strategy.sw_runner.basic_train]
 name = "accuracy"
 data_loader = "train_dataloader"
-num_samples = 4096
-max_epochs = 5
+num_samples = 10000
+max_epochs = 10
 lr_scheduler = "linear"
 optimizer = "adam"
 learning_rate = 1e-3

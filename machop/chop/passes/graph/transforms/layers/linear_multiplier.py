@@ -1,8 +1,7 @@
 import logging
 from math import ceil
-from pprint import pprint
 from torch import nn
-from chop.passes.graph.utils import deepcopy_mase_graph, get_mase_op, get_mase_type, get_parent_name
+from chop.passes.graph.utils import get_mase_op, get_parent_name
 from chop.tools.logger import get_logger
 
 
@@ -12,14 +11,10 @@ logger.setLevel(logging.INFO)
 def instantiate_linear(in_features, out_features, bias):
     if bias is not None:
         bias = True
-    try:
-        return nn.Linear(
-            in_features=in_features,
-            out_features=out_features,
-            bias=bias)
-    except Exception as e:
-        print(f"Failed to instantiate linear layer with in_features={in_features}, out_features={out_features}, bias={bias}.")
-        raise e
+    return nn.Linear(
+        in_features=in_features,
+        out_features=out_features,
+        bias=bias)
 
 def instantiate_relu(in_features):
     return nn.ReLU(in_features)
@@ -73,6 +68,10 @@ def linear_multiplier_transform_pass(graph, pass_args=None):
                     logger.warning(f"Could not find input_multiplier or channel_multiplier for node {node.name}. Using value of 1.")
                     input_multiplier = 1
                 in_features = ceil(in_features * input_multiplier)
+
+            if in_features == ori_module.in_features or out_features == ori_module.out_features:
+                # Already matching probably due to being transformed, we can skip
+                pass
 
             # Find the previous linear module
             # All the previous modules should be either Linear, ReLU, or BatchNorm1d
