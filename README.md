@@ -46,8 +46,6 @@ MASE provides an efficient and scalable approach for exploring accelerator syste
   title={MASE: An Efficient Representation for Software-Defined ML Hardware System Exploration},
   author={Zhang, Cheng and Cheng, Jianyi and Yu, Zhewen and Zhao, Yiren}}
   ```
-<<<<<<< HEAD
-=======
 ## Overview
 
 Machine learning accelerators have been used extensively to compute models with high performance and low power. Unfortunately, the development pace of ML models is much faster than the accelerator design cycle, leading to frequent changes in the hardware architecture requirements, rendering many accelerators obsolete. Existing design tools and frameworks can provide quick accelerator prototyping, but only for a limited range of models that fit into a single hardware device. With the emergence of large language models such as GPT-3, there is an increased need for hardware prototyping of large models within a many-accelerator system to ensure the hardware can scale with ever-growing model sizes.
@@ -128,7 +126,6 @@ Finally, evaluate the quantized model performance.
 ```
 
 See the Machop [README](./machop/README.md) for a more detailed introduction.
->>>>>>> main
 
 ## MASE Dev Meetings
 
@@ -139,10 +136,6 @@ See the Machop [README](./machop/README.md) for a more detailed introduction.
 
 ## Donation  
 
-<<<<<<< HEAD
-If you think MASE is helpful, please donate for our work, we appreciate your support!
-=======
 If you think MASE is helpful, please [donate](https://www.buymeacoffee.com/mase_tools) for our work, we appreciate your support!
->>>>>>> main
 
 <img src='./docs/imgs/bmc_qr.png' width='250'>

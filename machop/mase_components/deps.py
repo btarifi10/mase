@@ -7,10 +7,6 @@ Entry format:
 
 """
 
-<<<<<<< HEAD
-
-=======
->>>>>>> main
 MASE_HW_DEPS = {
     # TODO: Failing Test
     # "activations/fixed_relu": [],

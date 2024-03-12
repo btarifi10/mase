@@ -14,20 +14,14 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 
-<<<<<<< HEAD
 from chop.ir.graph.mase_graph import MaseGraph
 
-=======
->>>>>>> main
 from .base import SWRunnerBase
 
 
 def get_optimizer(model, optimizer: str, learning_rate, weight_decay=0.0):
-<<<<<<< HEAD
     if isinstance(model, MaseGraph):
         model = model.model
-=======
->>>>>>> main
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
         {
@@ -70,11 +64,7 @@ class RunnerBasicTrain(SWRunnerBase):
         self._setup_metric()
 
     def _setup_metric(self):
-<<<<<<< HEAD
         if self.model_info.is_vision_model or self.model_info.is_physical_model:
-=======
-        if self.model_info.is_vision_model:
->>>>>>> main
             match self.task:
                 case "classification" | "cls":
                     self.metric = MulticlassAccuracy(
@@ -114,7 +104,6 @@ class RunnerBasicTrain(SWRunnerBase):
         raise NotImplementedError()
 
     def vision_cls_forward(self, batch, model):
-<<<<<<< HEAD
         x, y = batch[0].to(self.accelerator), batch[1].to(self.accelerator)
         logits = model(x)
         loss = torch.nn.functional.cross_entropy(logits, y)
@@ -124,12 +113,6 @@ class RunnerBasicTrain(SWRunnerBase):
 
     def forward(self, task: str, batch: dict, model):
         if self.model_info.is_vision_model or self.model_info.is_physical_model:
-=======
-        raise NotImplementedError()
-
-    def forward(self, task: str, batch: dict, model):
-        if self.model_info.is_vision_model:
->>>>>>> main
             match self.task:
                 case "classification" | "cls":
                     loss = self.vision_cls_forward(batch, model)
@@ -197,12 +180,9 @@ class RunnerBasicTrain(SWRunnerBase):
         grad_accumulation_steps = self.config.get("gradient_accumulation_steps", 1)
         assert grad_accumulation_steps > 0, "num_accumulation_steps must be > 0"
 
-<<<<<<< HEAD
         if isinstance(model, MaseGraph):
             model = model.model
 
-=======
->>>>>>> main
         train_iter = iter(train_dataloader)
         for step_i in range(num_batches):
             if step_i > num_batches:
@@ -215,14 +195,9 @@ class RunnerBasicTrain(SWRunnerBase):
                 batch = next(train_iter)
 
             model.train()
-<<<<<<< HEAD
             loss_i = self.forward(self.task, batch, model)['loss']
             loss_i = loss_i / grad_accumulation_steps
 
-=======
-            loss_i = self.forward(self.task, batch, model)
-            loss_i = loss_i / grad_accumulation_steps
->>>>>>> main
             loss_i.backward()
 
             if (step_i + 1) % grad_accumulation_steps == 0 or step_i == num_batches - 1:

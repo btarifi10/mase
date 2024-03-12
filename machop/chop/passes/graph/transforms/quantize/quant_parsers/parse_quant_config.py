@@ -114,8 +114,6 @@ QUANT_ARITH_ENTRIES = {
             "bias_bipolar",
         ),
     },
-<<<<<<< HEAD
-=======
     "binary_residual": {
         "weight_entries": (
             "weight_width",
@@ -136,7 +134,6 @@ QUANT_ARITH_ENTRIES = {
             "bias_bipolar",
         ),
     },
->>>>>>> main
     "ternary": {
         "weight_entries": (
             "weight_width",

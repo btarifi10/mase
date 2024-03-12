@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 from .transformation.linear import LinearChannelMultiplierSpace
 from .transformation.conv2d import Conv2dChannelMultiplierSpace
-=======
->>>>>>> main
 from .quantization import (
     ManualHFModuleSearchSpaceMixedPrecisionPTQ,
     GraphSearchSpaceMixedPrecisionPTQ,
@@ -14,11 +11,8 @@ from .base import SearchSpaceBase
 SEARCH_SPACE_MAP = {
     "graph/quantize/mixed_precision_ptq": GraphSearchSpaceMixedPrecisionPTQ,
     "module/manual_hf/quantize/llm_mixed_precision_ptq": ManualHFModuleSearchSpaceMixedPrecisionPTQ,
-<<<<<<< HEAD
     "transform/linear_channel_multiplier": LinearChannelMultiplierSpace,
     "transform/conv2d_channel_multiplier": Conv2dChannelMultiplierSpace,
-=======
->>>>>>> main
     "graph/hardware/systolic_mapping": SystolicMappingSearchSpace,
 }
 

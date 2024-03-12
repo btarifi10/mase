@@ -18,20 +18,6 @@ sync-mlir:
 	bash mlir-air/utils/clone-mlir-aie.sh 
 
 # Build Docker container
-<<<<<<< HEAD
-build-docker-nocache:
-	docker build --no-cache --build-arg VHLS_PATH=$(vhls) -f Docker/Dockerfile --tag mase-ubuntu2204 Docker
-
-build-docker:
-	docker pull docker.io/deepwok/mase-docker:latest
-
-shell: build-docker
-	if which vivado >/dev/null 2>&1 ; then \
-		docker run -it --shm-size 256m --hostname mase-ubuntu2204 -w /workspace -v $(vhls):$(vhls) -v ~/.gitconfig:/root/.gitconfig -v ~/.ssh:/root/.ssh -v $(shell pwd):/workspace:z deepwok/mase-docker:latest /bin/bash ; \
-	else \
-		docker run -it --shm-size 256m --hostname mase-ubuntu2204 -w /workspace -v ~/.gitconfig:/root/.gitconfig -v ~/.ssh:/root/.ssh -v $(shell pwd):/workspace:z deepwok/mase-docker:latest /bin/bash ; \
-	fi
-=======
 build-docker:
 	if [ $(local) ]; then \
 		docker build --build-arg VHLS_PATH=$(vhls) --build-arg VHLS_VERSION=$(vhls_version) -f Docker/Dockerfile --tag mase-ubuntu2204 Docker; \
@@ -49,7 +35,6 @@ shell: build-docker
         -v $(shell pwd):/workspace:z \
         $(img) /bin/bash
 
->>>>>>> main
 # There is a historical reason that test files are stored under the current directory
 # Short-term solution: call scripts under /tmp so we can clean it properly
 test-hw:

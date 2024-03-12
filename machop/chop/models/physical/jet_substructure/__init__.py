@@ -81,7 +81,6 @@ class JSC_S(nn.Module):
             x = l(x)
         return x
 
-<<<<<<< HEAD
 class JSC_Custom(nn.Module):
     def __init__(self, info):
         super(JSC_Custom, self).__init__()
@@ -107,8 +106,6 @@ class JSC_Custom(nn.Module):
     def forward(self, x):
         return self.seq_blocks(x)
 
-=======
->>>>>>> main
 
 # Getters ------------------------------------------------------------------------------
 def get_jsc_toy(info):
@@ -122,9 +119,6 @@ def get_jsc_tiny(info):
 
 def get_jsc_s(info):
     return JSC_S(info)
-<<<<<<< HEAD
 
 def get_jsc_custom(info):
     return JSC_Custom(info)
-=======
->>>>>>> main
