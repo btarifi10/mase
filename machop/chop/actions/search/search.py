@@ -1,6 +1,9 @@
 import logging
 from os import PathLike
+<<<<<<< HEAD
 from pprint import pprint
+=======
+>>>>>>> main
 
 import toml
 import torch
@@ -52,7 +55,10 @@ def search(
     # search preparation
     accelerator = parse_accelerator(accelerator)
     strategy_config, search_space_config = parse_search_config(search_config)
+<<<<<<< HEAD
     
+=======
+>>>>>>> main
     save_path.mkdir(parents=True, exist_ok=True)
 
     # load model if the save_name is provided
@@ -63,6 +69,10 @@ def search(
     # set up data module
     data_module.prepare_data()
     data_module.setup()
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
     # construct the search space
     logger.info("Building search space...")
     search_space_cls = get_search_space_cls(search_space_config["name"])
@@ -75,8 +85,11 @@ def search(
     )
     search_space.build_search_space()
 
+<<<<<<< HEAD
     # pprint(search_space.__dict__)
     # exit()
+=======
+>>>>>>> main
     # construct a search strategy
     strategy_cls = get_search_strategy_cls(strategy_config["name"])
     strategy = strategy_cls(

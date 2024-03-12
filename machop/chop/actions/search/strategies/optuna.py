@@ -53,8 +53,11 @@ class SearchStrategyOptuna(SearchStrategyBase):
                 sampler = optuna.samplers.NSGAIIISampler()
             case "qmc":
                 sampler = optuna.samplers.QMCSampler()
+<<<<<<< HEAD
             case "bruteforce":
                 sampler = optuna.samplers.BruteForceSampler()
+=======
+>>>>>>> main
             case _:
                 raise ValueError(f"Unknown sampler name: {name}")
         return sampler
@@ -94,8 +97,11 @@ class SearchStrategyOptuna(SearchStrategyBase):
         is_eval_mode = self.config.get("eval_mode", True)
         model = search_space.rebuild_model(sampled_config, is_eval_mode)
 
+<<<<<<< HEAD
         print(model.__dict__)
 
+=======
+>>>>>>> main
         software_metrics = self.compute_software_metrics(
             model, sampled_config, is_eval_mode
         )

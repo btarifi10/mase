@@ -1,8 +1,15 @@
+<<<<<<< HEAD
 from .computations import RunnerBasicComputations
 from .eval import RunnerBasicEval
 from .train import RunnerBasicTrain
 
 SW_RUNNERS = {"basic_evaluation": RunnerBasicEval, "basic_train": RunnerBasicTrain, "basic_computations": RunnerBasicComputations}
+=======
+from .eval import RunnerBasicEval
+from .train import RunnerBasicTrain
+
+SW_RUNNERS = {"basic_evaluation": RunnerBasicEval, "basic_train": RunnerBasicTrain}
+>>>>>>> main
 
 
 def get_sw_runner(name: str, model_info, task: str, dataset_info, accelerator, config):
