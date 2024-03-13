@@ -52,15 +52,17 @@ def l1(tensor: torch.Tensor, info: dict, sparsity: float) -> torch.Tensor:
     :return: a sparsity mask
     :rtype: torch.Tensor
     """
-    threshold = torch.quantile(tensor.abs().flatten(), sparsity)
+    threshold = torch.quantile(tensor[tensor.abs().nonzero()].abs().flatten(), sparsity)
     mask = (tensor.abs() > threshold).to(torch.bool).to(tensor.device)
     return mask
 
 
 def global_weight_l1(tensor: torch.Tensor, info: dict, sparsity: float):
-    tensors = [v["weight_value"] for _, v in info.items() if v is not None]
+    tensors = [v["weight_actual_value"] for _, v in info.items() if v is not None]
     flattened_tensors = [t.abs().flatten() for t in tensors]
-    threshold = torch.quantile(torch.cat(flattened_tensors, dim=0), sparsity)
+    flattened_tensor = torch.cat(flattened_tensors, dim=0)
+    flattened_tensor_nonzero = flattened_tensor[flattened_tensor.nonzero()]
+    threshold = torch.quantile(flattened_tensor_nonzero, sparsity)
     mask = (tensor.abs() > threshold).to(torch.bool).to(tensor.device)
     return mask
 

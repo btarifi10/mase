@@ -55,6 +55,7 @@ def build_pruning_hooks(info, w_config, a_config):
                 "module_type": v["module_type"],
                 "weight_sparsity": w_config["sparsity"],
                 "value": v["weight_value"],
+                "actual_value": v["weight_actual_value"],
                 "stats": v["weight_stats"],
                 "shape": v["weight_shape"],
             }
@@ -80,11 +81,13 @@ def fetch_info(node, module):
         a_stats = node.meta["mase"].parameters["software"]["args"]["data_in_0"]["stat"]
         a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
 
+        w_actual_value = module.weight
         w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
         w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
         w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
         return {
             "module_type": "conv2d",
+            "weight_actual_value": w_actual_value,
             "weight_value": w_value,
             "weight_stats": w_stats,
             "weight_shape": w_shape,
@@ -99,11 +102,13 @@ def fetch_info(node, module):
         a_stats = node.meta["mase"].parameters["software"]["args"]["data_in_0"]["stat"]
         a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
 
+        w_actual_value = module.weight
         w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
         w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
         w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
         return {
             "module_type": "linear",
+            "weight_actual_value": w_actual_value,
             "weight_value": w_value,
             "weight_stats": w_stats,
             "weight_shape": w_shape,
