@@ -115,7 +115,7 @@ def load_node_meta_param_interface_pass(graph, pass_args: str):
     return graph
 
 
-def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
+def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_graph=None):
     """Save a mase graph.
 
     This saves the graph module as a serialized graph module and metadata.parameters as a toml file.
@@ -139,7 +139,8 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     # reset metadata to empty dict {}
     graph = graph_iterator_remove_metadata(graph)
     # save graph module & state dict
-    save_graph_module_ckpt(graph.model, graph_module_ckpt)
+    if pre_transformed_graph is None:
+        save_graph_module_ckpt(graph.model, graph_module_ckpt,)
     save_state_dict_ckpt(graph.model, state_dict_ckpt)
     # restore metadata.parameters
     graph, _ = init_metadata_analysis_pass(graph)
