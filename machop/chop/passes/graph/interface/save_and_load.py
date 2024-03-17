@@ -149,6 +149,12 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_
     logger.info(f"Saved mase graph to {save_dir}")
     return graph, {}
 
+def save_pruned_train_model(model, pass_args):
+    save_dir = pass_args
+    os.makedirs(save_dir, exist_ok=True)
+    state_dict_ckpt = os.path.join(save_dir, "train_prune_state_dict.pt")
+    save_state_dict_ckpt(model, state_dict_ckpt) 
+
 
 def load_mase_graph_interface_pass(graph, pass_args: dict = {"load_dir": None}):
     """

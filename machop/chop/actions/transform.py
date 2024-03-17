@@ -16,7 +16,7 @@ from chop.passes.graph.interface import (
     save_mase_graph_interface_pass,
 )
 from chop.passes.graph.utils import deepcopy_mase_graph
-from chop.tools.checkpoint_load import load_model
+from chop.tools.checkpoint_load import load_model, reapply_parametrizations_mg_module, load_state_dict
 from chop.tools.config_load import load_config
 from chop.tools.get_input import InputGenerator, get_cf_args, get_dummy_input
 from chop.tools.utils import parse_accelerator, to_numpy_if_tensor
@@ -149,6 +149,8 @@ def transform(
                 # We use the validation dataloader as that doesn't shuffle the input
                 # data. This determinism helps establish a fair ground in draw
                 # layer-wise comparisons between activation pruning strategies.
+                state_dict=load_state_dict(load_name, load_type)
+                reapply_parametrizations_mg_module(graph, state_dict)
                 input_generator = InputGenerator(
                     model_info=model_info,
                     data_module=data_module,
@@ -165,6 +167,7 @@ def transform(
                     #save_dir=prune_save_dir,
                     pass_args=pass_config,
                 )
+                print(graph.model.state_dict())
                 
             case "remove_prune_wrappers":
                 # Removes the pruning-related hooks and makes pruning permanent

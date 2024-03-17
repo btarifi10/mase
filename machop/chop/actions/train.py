@@ -11,7 +11,7 @@ from chop.passes.graph import (
     init_metadata_analysis_pass,
     add_software_metadata_analysis_pass,
 )
-from chop.passes.graph.interface import save_mase_graph_interface_pass
+from chop.passes.graph.interface import save_mase_graph_interface_pass, save_pruned_train_model
 from chop.ir.graph import MaseGraph
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -123,3 +123,9 @@ def train(
         transformed_ckpt = Path(save_path) / "transformed_ckpt"
         transformed_ckpt.mkdir(parents=True, exist_ok=True)
         save_mase_graph_interface_pass(graph, pass_args=transformed_ckpt)
+        print("T")
+
+    if save_path is not None and load_name is not None and load_type == "pt":
+            transformed_ckpt = Path(save_path) / "transformed_ckpt"
+            transformed_ckpt.mkdir(parents=True, exist_ok=True)
+            save_pruned_train_model(model, pass_args=transformed_ckpt)

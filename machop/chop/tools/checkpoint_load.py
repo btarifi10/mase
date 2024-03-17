@@ -14,6 +14,7 @@ def load_lightning_ckpt_to_unwrapped_model(checkpoint: str, model: torch.nn.Modu
     src_state_dict = torch.load(checkpoint)["state_dict"]
     tgt_state_dict = model.state_dict()
     new_tgt_state_dict = {}
+    src_state_dict = return_unparametrised_state_dict(src_state_dict, tgt_state_dict)
     for k, v in src_state_dict.items():
         if "model." in k:
             possible_tgt_k = ".".join(k.split(".")[1:])
@@ -22,20 +23,35 @@ def load_lightning_ckpt_to_unwrapped_model(checkpoint: str, model: torch.nn.Modu
         if possible_tgt_k in tgt_state_dict:
             new_tgt_state_dict[possible_tgt_k] = v
     
-    if(new_tgt_state_dict.keys()!=tgt_state_dict.keys()):
-        new_tgt_state_dict = {}
-        for k, v in src_state_dict.items():
-            if "model." in k:
-                possible_tgt_k = ".".join(k.split(".")[1:])
-            else:
-                possible_tgt_k = k
-            new_tgt_state_dict[possible_tgt_k] = v
-        reapply_parametrizations_from_state_dict(model, new_tgt_state_dict)
-        print(new_tgt_state_dict)
-        print("new")
-        print(model.state_dict())
     model.load_state_dict(state_dict=new_tgt_state_dict)
     return model
+
+def return_unparametrised_state_dict(param_state_dict, model_state_dict):
+    new_tgt_state_dict = {}
+    for k, v in param_state_dict.items():
+        if "model." in k:
+            possible_tgt_k = ".".join(k.split(".")[1:])
+        else:
+            possible_tgt_k = k
+        new_tgt_state_dict[possible_tgt_k] = v
+    new_unparam_state_dict = {}
+    
+    for k, v in new_tgt_state_dict.items():
+    # Check if the key contains the specific substring and modify it accordingly
+        if "parametrizations.weight" in k:
+            # Create a new key by removing the unwanted part
+            possible_tgt_k = k.replace(".parametrizations.weight.original", ".weight")
+        else:
+            possible_tgt_k = k
+        
+        # Update the temporary dictionary with the new key (if modified) or the old key
+        if possible_tgt_k in model_state_dict:
+            new_unparam_state_dict[possible_tgt_k] = v
+    if len(new_unparam_state_dict) == 0:
+        new_unparam_state_dict = model_state_dict
+
+    return new_unparam_state_dict
+
 
 
 def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
@@ -46,25 +62,47 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
     if "state_dict" in state_dict:
         state_dict = state_dict["state_dict"]
 
-    reapply_parametrizations_from_state_dict(model, state_dict)
+    #reapply_parametrizations_from_state_dict(model, state_dict)
+    state_dict=return_unparametrised_state_dict(state_dict, model.state_dict())
     #model.load_state_dict(loaded_state_dict)
     model.load_state_dict(state_dict=state_dict)
     return model
 
 def reapply_parametrizations_from_state_dict(model, state_dict):
-    for key, tensor in state_dict.items():
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        if "model." in k:
+            possible_tgt_k = ".".join(k.split(".")[1:])
+        else:
+            possible_tgt_k = k
+        new_state_dict[possible_tgt_k] = v
+    for key, tensor in new_state_dict.items():
         # Identify mask entries based on a naming convention or pattern
         if "mask" in key:
             # Example pattern: "seq_blocks.2.parametrizations.weight.mask"
             parts = key.split('.')
             # Extracting layer's sequential index and parameter name from the key
-            seq_index = int(parts[1])  # For "seq_blocks.2...", it extracts 2
+            print("part",parts)
+              # For "seq_blocks.2...", it extracts 2
             
             # Assuming a linear structure like nn.Sequential for "seq_blocks"
-            layer = model.seq_blocks[seq_index]
+            try:
+                seq_index = int(parts[1])
+                layer = model.seq_blocks[seq_index]
+                
+            except:
+                try:    
+                    module_path_parts = parts[:-4]  # Remove the last four parts
+                    #module_name = '.'.join(module_path_parts) 
+                    block=getattr(model, parts[0])
+                    layer = block[int(parts[1])]
+                except:
+                    layer=getattr(model, parts[0])
+
+
             
             # Determine the parameter name that the mask is associated with
-            param_name = parts[3] 
+            param_name = 'weight' 
             
             # Directly use the tensor as the mask
             device = next(model.parameters()).device 
@@ -73,13 +111,57 @@ def reapply_parametrizations_from_state_dict(model, state_dict):
 
             # Register the new mask parametrization
             torch.nn.utils.parametrize.register_parametrization(layer, param_name, FakeSparseWeight(mask))
-    
-        print("Key"+ key)
+            
+def reapply_parametrizations_mg_module(graph, state_dict):
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        if "model." in k:
+            possible_tgt_k = ".".join(k.split(".")[1:])
+        else:
+            possible_tgt_k = k
+        new_state_dict[possible_tgt_k] = v
+    for key, tensor in new_state_dict.items():
+        # Identify mask entries based on a naming convention or pattern
+        if "mask" in key:
+            # Example pattern: "seq_blocks.2.parametrizations.weight.mask"
+            parts = key.split('.')
+            # Extracting layer's sequential index and parameter name from the key
+            module_path_parts = parts[:-4]  # Remove the last four parts
+            module_name = '.'.join(module_path_parts) 
+            
+            # Determine the parameter name that the mask is associated with
+            param_name = module_name
+            for node in graph.fx_graph.nodes:
+                # pruning only deals with modules at the moment
+                if node.op == "call_module":
+                    name = node.target
+                    #print(name)
+                    #print(param_name)
+                    if name == param_name:
+                        # Directly use the tensor as the mask
+                        device = next(graph.model.parameters()).device 
+                        mask = tensor.to(device)
+                        # Register the new mask parametrization
+                        torch.nn.utils.parametrize.register_parametrization(graph.modules[param_name], 'weight', FakeSparseWeight(mask))
+                        
+    return graph
+                    
+           
+def load_state_dict(load_name: str, load_type: str):
+    if load_type == "pt":
+        state_dict = torch.load(load_name)
+        logger.info(f"Loaded pytorch checkpoint from {load_name}")
+    elif load_type == "pl":
+        if not load_name.endswith(".ckpt"):
+            logger.warning(
+                f"Lightning checkpoint should end with '.ckpt', but got {load_name}"
+            )
+        state_dict = torch.load(load_name)["state_dict"]
+        logger.info(f"Loaded pytorch lightning checkpoint from {load_name}")
+    else:
+        logger.info(f"!! Not supported")
 
-        print("2")
-    
-        
-    
+    return state_dict
 
 def load_graph_module_ckpt(checkpoint: str):
     """
