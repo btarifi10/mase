@@ -20,8 +20,6 @@ from .base import SWRunnerBase
 
 
 def get_optimizer(model, optimizer: str, learning_rate, weight_decay=0.0):
-    if isinstance(model, MaseGraph):
-        model = model.model
     no_decay = ["bias", "LayerNorm.weight"]
     optimizer_grouped_parameters = [
         {
@@ -142,6 +140,9 @@ class RunnerBasicTrain(SWRunnerBase):
         return reduced
 
     def __call__(self, data_module, model, sampled_config) -> dict[str, float]:
+        if not isinstance(model, torch.nn.Module):
+            model = model.model
+    
         num_samples = self.config["num_samples"]
         max_epochs = self.config["max_epochs"]
 
@@ -180,9 +181,6 @@ class RunnerBasicTrain(SWRunnerBase):
         grad_accumulation_steps = self.config.get("gradient_accumulation_steps", 1)
         assert grad_accumulation_steps > 0, "num_accumulation_steps must be > 0"
 
-        if isinstance(model, MaseGraph):
-            model = model.model
-
         train_iter = iter(train_dataloader)
         for step_i in range(num_batches):
             if step_i > num_batches:
@@ -195,8 +193,8 @@ class RunnerBasicTrain(SWRunnerBase):
                 batch = next(train_iter)
 
             model.train()
-            loss_i = self.forward(self.task, batch, model)['loss']
-            loss_i = loss_i / grad_accumulation_steps
+            loss_i = self.forward(self.task, batch, model)
+            loss_i = loss_i['loss'] / grad_accumulation_steps
 
             loss_i.backward()
 

@@ -8,6 +8,7 @@
 # uses the quantile function, which, when the sparisty is 0, uses the lowest value as
 # the threshold. So, at least one value in the mask is always set to False.
 
+import numpy as np
 import torch
 
 """
@@ -52,25 +53,35 @@ def l1(tensor: torch.Tensor, info: dict, sparsity: float) -> torch.Tensor:
     :return: a sparsity mask
     :rtype: torch.Tensor
     """
-    threshold = torch.quantile(tensor[tensor.abs().nonzero()].abs().flatten(), sparsity)
+    with torch.no_grad():
+        abs_nonzero_numpy = tensor.abs().cpu().numpy().flatten()
+        abs_nonzero_numpy = abs_nonzero_numpy[abs_nonzero_numpy != 0]
+        
+        threshold = np.quantile(abs_nonzero_numpy, sparsity)
     mask = (tensor.abs() > threshold).to(torch.bool).to(tensor.device)
     return mask
 
 
 def global_weight_l1(tensor: torch.Tensor, info: dict, sparsity: float):
     tensors = [v["weight_actual_value"] for _, v in info.items() if v is not None]
-    flattened_tensors = [t.abs().flatten() for t in tensors]
-    flattened_tensor = torch.cat(flattened_tensors, dim=0)
-    flattened_tensor_nonzero = flattened_tensor[flattened_tensor.nonzero()]
-    threshold = torch.quantile(flattened_tensor_nonzero, sparsity)
+
+    with torch.no_grad():
+        flattened_tensors = [t.abs().cpu().numpy().flatten() for t in tensors]
+        flattened_tensor = np.concatenate(flattened_tensors, axis=0)
+        flattened_tensor = flattened_tensor[flattened_tensor != 0]
+        
+        threshold = np.quantile(flattened_tensor, sparsity)
+
     mask = (tensor.abs() > threshold).to(torch.bool).to(tensor.device)
     return mask
 
 
 def global_activation_l1(tensor: torch.Tensor, info: dict, sparsity: float):
     tensors = [v["activation_value"] for _, v in info.items() if v is not None]
-    flattened_tensors = [t.abs().flatten() for t in tensors]
-    threshold = torch.quantile(torch.cat(flattened_tensors, dim=0), sparsity)
+    threshold = 0
+    with torch.no_grad():
+        flattened_tensors = [t.abs().flatten() for t in tensors]
+        threshold = np.quantile(torch.cat(flattened_tensors, dim=0).detach().numpy(), sparsity)
     mask = (tensor.abs() > threshold).to(torch.bool).to(tensor.device)
     return mask
 

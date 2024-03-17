@@ -5,3 +5,5 @@ from .transform import transform
 from .search import search
 from .emit import emit
 from .simulate import simulate
+from .optimize.prune import prune_iterative
+from .optimize.quantization import quantize_model

@@ -1,17 +1,17 @@
 # basics
-model = "jsc-toy"
+model = "jsc-custom"
 dataset = "jsc"
 task = "cls"
 
-max_epochs = 25
+max_epochs = 5
 batch_size = 256
-learning_rate = 1e-4
+learning_rate = 1e-3
 accelerator = "cpu"
 project = "lab-4_search-channel-multiplier"
 seed = 42
 log_every_n_steps = 5
-load_name = "./mase_output/jsc-toy-lab-4/software/training_ckpts/best-v1.ckpt"
-load_type = "pl"
+# load_name = "./mase_output/jsc-toy-lab-4/software/training_ckpts/best-v1.ckpt"
+# load_type = "pl"
 
 [passes.quantize]
 by = "type"
@@ -61,7 +61,7 @@ eval_mode = false
 name = "accuracy"
 data_loader = "train_dataloader"
 num_samples = 1000000
-max_epochs = 10
+max_epochs = 2
 lr_scheduler = "linear"
 optimizer = "adam"
 learning_rate = 1e-4
@@ -75,7 +75,7 @@ name = "hw_dummy"
 
 [search.strategy.setup]
 n_jobs = 1
-n_trials = 100
+n_trials = 5
 timeout = 20000
 sampler = "tpe"
 # sum_scaled_metrics = true # single objective
