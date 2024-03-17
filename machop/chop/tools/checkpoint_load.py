@@ -1,7 +1,8 @@
 import logging
 import os
-
+from chop.passes.graph.transforms.pruning.sparse_parameterization import FakeSparseWeight
 import torch
+import torch as nn
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,19 @@ def load_lightning_ckpt_to_unwrapped_model(checkpoint: str, model: torch.nn.Modu
             possible_tgt_k = k
         if possible_tgt_k in tgt_state_dict:
             new_tgt_state_dict[possible_tgt_k] = v
+    
+    if(new_tgt_state_dict.keys()!=tgt_state_dict.keys()):
+        new_tgt_state_dict = {}
+        for k, v in src_state_dict.items():
+            if "model." in k:
+                possible_tgt_k = ".".join(k.split(".")[1:])
+            else:
+                possible_tgt_k = k
+            new_tgt_state_dict[possible_tgt_k] = v
+        reapply_parametrizations_from_state_dict(model, new_tgt_state_dict)
+        print(new_tgt_state_dict)
+        print("new")
+        print(model.state_dict())
     model.load_state_dict(state_dict=new_tgt_state_dict)
     return model
 
@@ -32,9 +46,40 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
     if "state_dict" in state_dict:
         state_dict = state_dict["state_dict"]
 
+    reapply_parametrizations_from_state_dict(model, state_dict)
+    #model.load_state_dict(loaded_state_dict)
     model.load_state_dict(state_dict=state_dict)
     return model
 
+def reapply_parametrizations_from_state_dict(model, state_dict):
+    for key, tensor in state_dict.items():
+        # Identify mask entries based on a naming convention or pattern
+        if "mask" in key:
+            # Example pattern: "seq_blocks.2.parametrizations.weight.mask"
+            parts = key.split('.')
+            # Extracting layer's sequential index and parameter name from the key
+            seq_index = int(parts[1])  # For "seq_blocks.2...", it extracts 2
+            
+            # Assuming a linear structure like nn.Sequential for "seq_blocks"
+            layer = model.seq_blocks[seq_index]
+            
+            # Determine the parameter name that the mask is associated with
+            param_name = parts[3] 
+            
+            # Directly use the tensor as the mask
+            device = next(model.parameters()).device 
+            mask = tensor.to(device)
+            print(1)
+
+            # Register the new mask parametrization
+            torch.nn.utils.parametrize.register_parametrization(layer, param_name, FakeSparseWeight(mask))
+    
+        print("Key"+ key)
+
+        print("2")
+    
+        
+    
 
 def load_graph_module_ckpt(checkpoint: str):
     """

@@ -95,7 +95,24 @@ def fetch_info(node, module):
             "activation_stats": a_stats,
             "activation_shape": a_shape,
         }
+    #Conv1d
+    if isinstance(module, torch.nn.Conv1d):
+        a_value = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["value"]
+        a_stats = node.meta["mase"].parameters["software"]["args"]["data_in_0"]["stat"]
+        a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
 
+        w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
+        w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
+        w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
+        return {
+            "module_type": "conv1d",
+            "weight_value": w_value,
+            "weight_stats": w_stats,
+            "weight_shape": w_shape,
+            "activation_value": a_value,
+            "activation_stats": a_stats,
+            "activation_shape": a_shape,
+        }
     # deal with linear
     if isinstance(module, torch.nn.Linear):
         a_value = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["value"]
@@ -106,6 +123,7 @@ def fetch_info(node, module):
         w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
         w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
         w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
+        print(node.meta["mase"].parameters["common"]["args"])
         return {
             "module_type": "linear",
             "weight_actual_value": w_actual_value,

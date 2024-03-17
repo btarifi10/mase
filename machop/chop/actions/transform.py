@@ -45,6 +45,7 @@ def transform(
     accelerator: str = "auto",
 ):
     accelerator = parse_accelerator(accelerator)
+    pre_transform_graph=None
     model = pre_transform_load(load_name=load_name, load_type=load_type, model=model)
     model.to(accelerator)
     config = load_config(config)
@@ -158,11 +159,13 @@ def transform(
                 pass_config["input_generator"] = input_generator
                 prune_save_dir = save_dir / "prune"
                 prune_save_dir.mkdir(parents=True, exist_ok=True)
+                pre_transform_graph=graph
                 graph, _ = PASSES[pass_name](
                     graph,
-                    save_dir=prune_save_dir,
-                    config=pass_config,
+                    #save_dir=prune_save_dir,
+                    pass_args=pass_config,
                 )
+                
             case "remove_prune_wrappers":
                 # Removes the pruning-related hooks and makes pruning permanent
                 graph, _ = PASSES[pass_name](graph, pass_args=None)
@@ -192,5 +195,5 @@ def transform(
         graph, _ = metadata_value_type_cast_transform_pass(
             graph, pass_args={"fn": to_numpy_if_tensor}
         )
-        save_mase_graph_interface_pass(graph, pass_args=transformed_ckpt)
+        save_mase_graph_interface_pass(graph, pass_args=transformed_ckpt, pre_transformed_graph=pre_transform_graph)
     return graph
