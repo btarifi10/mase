@@ -165,6 +165,7 @@ def transform(
                     #save_dir=prune_save_dir,
                     pass_args=pass_config,
                 )
+                
             case "remove_prune_wrappers":
                 # Removes the pruning-related hooks and makes pruning permanent
                 graph, _ = PASSES[pass_name](graph, pass_args=None)

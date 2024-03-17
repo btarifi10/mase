@@ -106,6 +106,7 @@ def fetch_info(node, module):
         w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
         w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
         w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
+        print(node.meta["mase"].parameters["common"]["args"])
         return {
             "module_type": "linear",
             "weight_actual_value": w_actual_value,
@@ -176,4 +177,5 @@ def prune_transform_pass(graph, pass_args: dict = {}):
     :rtype: tuple
     """
     graph = prune_graph_iterator(graph, pass_args)
+    print(graph.model.state_dict())
     return graph, {}
