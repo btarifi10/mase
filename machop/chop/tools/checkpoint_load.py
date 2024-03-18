@@ -59,6 +59,8 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
     Load a PyTorch state dict or checkpoint containing state dict to a PyTorch model.
     """
     state_dict = torch.load(checkpoint)
+
+    #Write code to separate_state_dict
     if "state_dict" in state_dict:
         state_dict = state_dict["state_dict"]
 
@@ -68,6 +70,10 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
     model.load_state_dict(state_dict=state_dict)
     return model
 
+
+def reappply_activations(graph, state_dict):
+    #write _code to call activation function from prunning
+    return
 def reapply_parametrizations_from_state_dict(model, state_dict):
     new_state_dict = {}
     for k, v in state_dict.items():

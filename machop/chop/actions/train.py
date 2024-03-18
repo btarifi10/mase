@@ -95,6 +95,8 @@ def train(
         model = load_model(load_name, load_type=load_type, model=model)
         logger.info(f"'{load_type}' checkpoint loaded before training")
 
+        #reapply Weight parametrisations 
+        #reapply activation parametrisations
     pl_model = wrapper_cls(
         model,
         dataset_info=dataset_info,

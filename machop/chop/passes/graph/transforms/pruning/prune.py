@@ -82,8 +82,8 @@ def fetch_info(node, module):
         a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
 
         w_actual_value = module.weight
-        print("New")
-        print(node.meta["mase"].parameters["common"]["args"])
+        #print("New")
+        #print(node.meta["mase"].parameters["common"]["args"])
         w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
         w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
         w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
@@ -177,6 +177,40 @@ def prune_graph_iterator(graph, config: dict):
                     getattr(graph.modules[node.target], register_fn)(hook_fn)
 
     return graph
+
+def activation_pruning_pass(graph, pass_args: dict = {}):
+    a_config = load_activation_prune_config(pass_args["activation"], graph)
+    info = {}
+    for node in graph.fx_graph.nodes:
+        # pruning only deals with modules at the moment
+        if node.op == "call_module":
+            module = graph.modules[node.target]
+            meta = fetch_info(node, module)
+            info[node.target] = meta
+    named_hooks = {}
+    for k, v in info.items():
+        if v is not None:
+            # for activations
+            a_info = {
+                "module_type": v["module_type"],
+                "activation_sparsity": a_config["sparsity"],
+                "value": v["activation_value"],
+                "stats": v["activation_stats"],
+                "shape": v["activation_shape"],
+            }
+            named_hooks[k] = {
+                "a_hook": get_activation_hook(k, info, a_info, a_config),
+            }
+    for node in graph.fx_graph.nodes:
+        # pruning only deals with modules at the moment
+        if node.op == "call_module":
+            name = node.target
+            if name in named_hooks.keys():
+                node_hooks = named_hooks[name]
+                if node_hooks["a_hook"] is not None:
+                    register_fn, hook_fn = node_hooks["a_hook"]
+                    getattr(graph.modules[node.target], register_fn)(hook_fn)
+    return graph, {}
 
 
 def prune_transform_pass(graph, pass_args: dict = {}):

@@ -22,11 +22,13 @@ def save_graph_module_ckpt(graph_module: fx.GraphModule, save_path: str) -> None
     torch.save(graph_module, save_path)
 
 
-def save_state_dict_ckpt(graph_module: fx.GraphModule, save_path: str) -> None:
+def save_state_dict_ckpt(graph_module: fx.GraphModule, save_path: str, activation_data: dict = None) -> None:
     """
     Save a serialized state dict.
     """
     state_dict = graph_module.state_dict()
+    if activation_data is not None:
+        state_dict["activation"]=activation_data
     torch.save(state_dict, save_path)
 
 
@@ -115,7 +117,7 @@ def load_node_meta_param_interface_pass(graph, pass_args: str):
     return graph
 
 
-def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_graph=None):
+def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     """Save a mase graph.
 
     This saves the graph module as a serialized graph module and metadata.parameters as a toml file.
@@ -127,6 +129,12 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_
     Returns:
         MaseGraph: mase_graph
     """
+    transformed=None
+    print(pass_args.keys())
+    if "activation" in pass_args.keys():
+        transformed=True
+        activation_param_dict=pass_args["activation"]
+    pass_args=pass_args["pass_args"]
     save_dir = pass_args
     os.makedirs(save_dir, exist_ok=True)
     graph_module_ckpt = os.path.join(save_dir, "graph_module.mz")
@@ -140,7 +148,7 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_
     #print(graph.model.state_dict())
     graph = graph_iterator_remove_metadata(graph)
     # save graph module & state dict
-    if pre_transformed_graph is None:
+    if transformed is None:
         save_graph_module_ckpt(graph.model, graph_module_ckpt,)
     save_state_dict_ckpt(graph.model, state_dict_ckpt)
     # restore metadata.parameters

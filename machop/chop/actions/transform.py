@@ -151,6 +151,7 @@ def transform(
                 # layer-wise comparisons between activation pruning strategies.
                 state_dict=load_state_dict(load_name, load_type)
                 reapply_parametrizations_mg_module(graph, state_dict)
+                #reapply_activation_prunning
                 input_generator = InputGenerator(
                     model_info=model_info,
                     data_module=data_module,
@@ -161,13 +162,15 @@ def transform(
                 pass_config["input_generator"] = input_generator
                 prune_save_dir = save_dir / "prune"
                 prune_save_dir.mkdir(parents=True, exist_ok=True)
-                pre_transform_graph=graph
+                #pre_transform_graph=graph
+                activation_dict=pass_config["activation"]
+                print(activation_dict)
                 graph, _ = PASSES[pass_name](
                     graph,
                     #save_dir=prune_save_dir,
                     pass_args=pass_config,
                 )
-                print(graph.model.state_dict())
+                #print(graph.model.state_dict())
                 
             case "remove_prune_wrappers":
                 # Removes the pruning-related hooks and makes pruning permanent
@@ -198,5 +201,9 @@ def transform(
         graph, _ = metadata_value_type_cast_transform_pass(
             graph, pass_args={"fn": to_numpy_if_tensor}
         )
-        save_mase_graph_interface_pass(graph, pass_args=transformed_ckpt, pre_transformed_graph=pre_transform_graph)
+        passed_args={'pass_args' :  transformed_ckpt}
+        
+        if pass_name == "prune":
+            passed_args['activation']=activation_dict
+        save_mase_graph_interface_pass(graph, pass_args=passed_args)
     return graph
