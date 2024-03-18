@@ -1,6 +1,7 @@
 import logging
 import os
 from chop.passes.graph.transforms.pruning.sparse_parameterization import FakeSparseWeight
+from chop.passes.graph.transforms.pruning.prune import activation_pruning_pass
 import torch
 import torch as nn
 
@@ -61,7 +62,7 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
     state_dict = torch.load(checkpoint)
 
     #Write code to separate_state_dict
-    if "state_dict" in state_dict:
+    if "state_dict" in state_dict.keys():
         state_dict = state_dict["state_dict"]
 
     #reapply_parametrizations_from_state_dict(model, state_dict)
@@ -71,9 +72,13 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
     return model
 
 
-def reappply_activations(graph, state_dict):
+def reappply_activations(graph, state_dict_list):
     #write _code to call activation function from prunning
-    return
+    for activation_config in state_dict_list:
+        #print("activation_config", activation_config)
+        activation_config ={'activation': activation_config}
+        graph =activation_pruning_pass(graph, activation_config)
+    return graph
 def reapply_parametrizations_from_state_dict(model, state_dict):
     new_state_dict = {}
     for k, v in state_dict.items():
@@ -88,7 +93,7 @@ def reapply_parametrizations_from_state_dict(model, state_dict):
             # Example pattern: "seq_blocks.2.parametrizations.weight.mask"
             parts = key.split('.')
             # Extracting layer's sequential index and parameter name from the key
-            print("part",parts)
+            #print("part",parts)
               # For "seq_blocks.2...", it extracts 2
             
             # Assuming a linear structure like nn.Sequential for "seq_blocks"
@@ -113,7 +118,8 @@ def reapply_parametrizations_from_state_dict(model, state_dict):
             # Directly use the tensor as the mask
             device = next(model.parameters()).device 
             mask = tensor.to(device)
-            print(1)
+            #print("layer", model.seq_blocks[seq_index])
+            #print("Param_name", param_name)
 
             # Register the new mask parametrization
             torch.nn.utils.parametrize.register_parametrization(layer, param_name, FakeSparseWeight(mask))

@@ -27,8 +27,11 @@ def save_state_dict_ckpt(graph_module: fx.GraphModule, save_path: str, activatio
     Save a serialized state dict.
     """
     state_dict = graph_module.state_dict()
+    print("activation data", activation_data)
     if activation_data is not None:
-        state_dict["activation"]=activation_data
+        state_dict={"state_dict": state_dict}
+        state_dict["activations"]=activation_data
+        print("state_dict", state_dict.keys())
     torch.save(state_dict, save_path)
 
 
@@ -131,9 +134,8 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     """
     transformed=None
     print(pass_args.keys())
-    if "activation" in pass_args.keys():
-        transformed=True
-        activation_param_dict=pass_args["activation"]
+    if "activations" in pass_args.keys():
+        transformed=pass_args["activations"]
     pass_args=pass_args["pass_args"]
     save_dir = pass_args
     os.makedirs(save_dir, exist_ok=True)
@@ -150,18 +152,18 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     # save graph module & state dict
     if transformed is None:
         save_graph_module_ckpt(graph.model, graph_module_ckpt,)
-    save_state_dict_ckpt(graph.model, state_dict_ckpt)
+    save_state_dict_ckpt(graph.model, state_dict_ckpt, transformed)
     # restore metadata.parameters
     graph, _ = init_metadata_analysis_pass(graph)
     graph = graph_iterator_add_n_meta_param(graph, node_n_meta_param)
     logger.info(f"Saved mase graph to {save_dir}")
     return graph, {}
 
-def save_pruned_train_model(model, pass_args):
+def save_pruned_train_model(model, pass_args, activation: None):
     save_dir = pass_args
     os.makedirs(save_dir, exist_ok=True)
     state_dict_ckpt = os.path.join(save_dir, "train_prune_state_dict.pt")
-    save_state_dict_ckpt(model, state_dict_ckpt) 
+    save_state_dict_ckpt(model, state_dict_ckpt, activation) 
 
 
 def load_mase_graph_interface_pass(graph, pass_args: dict = {"load_dir": None}):

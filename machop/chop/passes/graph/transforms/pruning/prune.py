@@ -179,7 +179,7 @@ def prune_graph_iterator(graph, config: dict):
     return graph
 
 def activation_pruning_pass(graph, pass_args: dict = {}):
-    a_config = load_activation_prune_config(pass_args["activation"], graph)
+    a_config = load_activation_prune_config(pass_args["activations"], graph)
     info = {}
     for node in graph.fx_graph.nodes:
         # pruning only deals with modules at the moment

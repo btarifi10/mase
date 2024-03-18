@@ -16,7 +16,7 @@ from chop.passes.graph.interface import (
     save_mase_graph_interface_pass,
 )
 from chop.passes.graph.utils import deepcopy_mase_graph
-from chop.tools.checkpoint_load import load_model, reapply_parametrizations_mg_module, load_state_dict
+from chop.tools.checkpoint_load import load_model, reapply_parametrizations_mg_module, load_state_dict, reappply_activations
 from chop.tools.config_load import load_config
 from chop.tools.get_input import InputGenerator, get_cf_args, get_dummy_input
 from chop.tools.utils import parse_accelerator, to_numpy_if_tensor
@@ -151,7 +151,8 @@ def transform(
                 # layer-wise comparisons between activation pruning strategies.
                 state_dict=load_state_dict(load_name, load_type)
                 reapply_parametrizations_mg_module(graph, state_dict)
-                #reapply_activation_prunning
+                if "state_dict" in state_dict:
+                    reappply_activations(graph, state_dict['activations'])
                 input_generator = InputGenerator(
                     model_info=model_info,
                     data_module=data_module,
@@ -163,8 +164,8 @@ def transform(
                 prune_save_dir = save_dir / "prune"
                 prune_save_dir.mkdir(parents=True, exist_ok=True)
                 #pre_transform_graph=graph
-                activation_dict=pass_config["activation"]
-                print(activation_dict)
+                if "activation" in pass_config:
+                    activation_dict=pass_config["activation"]
                 graph, _ = PASSES[pass_name](
                     graph,
                     #save_dir=prune_save_dir,
@@ -204,6 +205,10 @@ def transform(
         passed_args={'pass_args' :  transformed_ckpt}
         
         if pass_name == "prune":
-            passed_args['activation']=activation_dict
+            if "state_dict" in state_dict.keys():
+                state_dict["activation"].append(activation_dict)
+                passed_args['activations']=state_dict["activation"]
+            else:
+                passed_args['activations']=[activation_dict]
         save_mase_graph_interface_pass(graph, pass_args=passed_args)
     return graph

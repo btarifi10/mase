@@ -406,7 +406,7 @@ def add_common_metadata_analysis_pass(
         }
 
     """
-
+    #print(graph)
     logger.debug(graph.fx_graph)
     graph = graph_iterator_for_mase_ops(graph)
     graph = graph_iterator_for_metadata(graph, **pass_args)
