@@ -168,10 +168,8 @@ def transform(
                     activation_dict=pass_config["activation"]
                 graph, _ = PASSES[pass_name](
                     graph,
-                    #save_dir=prune_save_dir,
                     pass_args=pass_config,
                 )
-                #print(graph.model.state_dict())
                 
             case "remove_prune_wrappers":
                 # Removes the pruning-related hooks and makes pruning permanent

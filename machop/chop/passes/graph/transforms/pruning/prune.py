@@ -82,8 +82,6 @@ def fetch_info(node, module):
         a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
 
         w_actual_value = module.weight
-        #print("New")
-        #print(node.meta["mase"].parameters["common"]["args"])
         w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
         w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
         w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
@@ -179,7 +177,7 @@ def prune_graph_iterator(graph, config: dict):
     return graph
 
 def activation_pruning_pass(graph, pass_args: dict = {}):
-    a_config = load_activation_prune_config(pass_args["activations"], graph)
+    a_config = load_activation_prune_config(pass_args["activation"], graph)
     info = {}
     for node in graph.fx_graph.nodes:
         # pruning only deals with modules at the moment

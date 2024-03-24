@@ -101,20 +101,14 @@ def train(
         print("model_info", type(model_info))
         print("model_info", model_info.name)
         if "activations" in state_dict.keys():
-            # model = get_model(
-            #     str(model_info.name),
-            #     task="cls",
-            #     dataset_info=data_module.dataset_info,
-            #     pretrained=False,
-            #     checkpoint = None)
-            # graph = MaseGraph(model)
+         
             data_module.prepare_data()
             data_module.setup()
     
             input_generator = InputGenerator(
             data_module=data_module,
             model_info=model_info,
-            task="cls",
+            task=task,
             which_dataloader="train",
             max_batches=1
         )
@@ -133,7 +127,6 @@ def train(
             reappply_activations(graph, activation_config)
             reapply_parametrizations_mg_module(graph, state_dict)
             model=graph.model
-    #if load_type == "pl" or load_type == "pt":
         else:
             reapply_parametrizations_from_state_dict(model, state_dict)
     pl_model = wrapper_cls(

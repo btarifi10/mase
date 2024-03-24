@@ -4,6 +4,7 @@ import numpy as np
 
 import toml
 import torch
+import pickle
 import torch.fx as fx
 from chop.passes.graph.analysis.init_metadata import init_metadata_analysis_pass
 from chop.tools.config_load import convert_none_to_str_na, convert_str_na_to_none
@@ -33,6 +34,11 @@ def save_state_dict_ckpt(graph_module: fx.GraphModule, save_path: str, activatio
         state_dict["activations"]=activation_data
         print("state_dict", state_dict.keys())
     torch.save(state_dict, save_path)
+
+def save_pickle(graph_module: fx.GraphModule, save_path: str) -> None:
+    #Loading pickle_not yet implemented
+    with open(save_path, 'wb') as file:
+        pickle.dump(graph_module, file)
 
 
 def graph_iterator_remove_metadata(graph):
@@ -142,6 +148,7 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     graph_module_ckpt = os.path.join(save_dir, "graph_module.mz")
     state_dict_ckpt = os.path.join(save_dir, "state_dict.pt")
     n_meta_param_ckpt = os.path.join(save_dir, "node_meta_param.toml")
+    pickle_ckpt = os.path.join(save_dir, "pickle_save.pkl")
     # collect metadata.parameters
     node_n_meta_param = collect_n_meta_param(graph)
     # save metadata.parameters to toml
@@ -153,6 +160,7 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     if transformed is None:
         save_graph_module_ckpt(graph.model, graph_module_ckpt,)
     save_state_dict_ckpt(graph.model, state_dict_ckpt, transformed)
+    save_pickle(graph.model, pickle_ckpt)
     # restore metadata.parameters
     graph, _ = init_metadata_analysis_pass(graph)
     graph = graph_iterator_add_n_meta_param(graph, node_n_meta_param)

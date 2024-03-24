@@ -73,9 +73,7 @@ def load_unwrapped_ckpt(checkpoint: str, model: torch.nn.Module):
 
 
 def reappply_activations(graph, state_dict_list):
-    #write _code to call activation function from prunning
     for activation_config in state_dict_list:
-        #print("activation_config", activation_config)
         activation_config ={'activation': activation_config}
         graph =activation_pruning_pass(graph, activation_config)
     return graph
@@ -90,13 +88,9 @@ def reapply_parametrizations_from_state_dict(model, state_dict):
     for key, tensor in new_state_dict.items():
         # Identify mask entries based on a naming convention or pattern
         if "mask" in key:
-            # Example pattern: "seq_blocks.2.parametrizations.weight.mask"
-            parts = key.split('.')
-            # Extracting layer's sequential index and parameter name from the key
-            #print("part",parts)
-              # For "seq_blocks.2...", it extracts 2
             
-            # Assuming a linear structure like nn.Sequential for "seq_blocks"
+            parts = key.split('.')
+           
             try:
                 seq_index = int(parts[1])
                 layer = model.seq_blocks[seq_index]
@@ -118,9 +112,7 @@ def reapply_parametrizations_from_state_dict(model, state_dict):
             # Directly use the tensor as the mask
             device = next(model.parameters()).device 
             mask = tensor.to(device)
-            #print("layer", model.seq_blocks[seq_index])
-            #print("Param_name", param_name)
-
+            
             # Register the new mask parametrization
             torch.nn.utils.parametrize.register_parametrization(layer, param_name, FakeSparseWeight(mask))
             
@@ -134,21 +126,16 @@ def reapply_parametrizations_mg_module(graph, state_dict):
         new_state_dict[possible_tgt_k] = v
     for key, tensor in new_state_dict.items():
         # Identify mask entries based on a naming convention or pattern
-        if "mask" in key:
-            # Example pattern: "seq_blocks.2.parametrizations.weight.mask"
+        if "mask" in key:            
             parts = key.split('.')
-            # Extracting layer's sequential index and parameter name from the key
             module_path_parts = parts[:-4]  # Remove the last four parts
             module_name = '.'.join(module_path_parts) 
             
             # Determine the parameter name that the mask is associated with
             param_name = module_name
             for node in graph.fx_graph.nodes:
-                # pruning only deals with modules at the moment
                 if node.op == "call_module":
-                    name = node.target
-                    #print(name)
-                    #print(param_name)
+                    name = node.target                   
                     if name == param_name:
                         # Directly use the tensor as the mask
                         device = next(graph.model.parameters()).device 
