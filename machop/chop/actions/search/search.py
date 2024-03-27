@@ -64,6 +64,7 @@ def search(
     # construct the search space
     logger.info("Building search space...")
     search_space_cls = get_search_space_cls(search_space_config["name"])
+    print(search_space_config)
     search_space = search_space_cls(
         model=model,
         model_info=model_info,

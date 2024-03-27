@@ -54,10 +54,9 @@ def l1(tensor: torch.Tensor, info: dict, sparsity: float) -> torch.Tensor:
     :rtype: torch.Tensor
     """
     with torch.no_grad():
-        abs_nonzero_numpy = tensor.abs().cpu().numpy().flatten()
-        abs_nonzero_numpy = abs_nonzero_numpy[abs_nonzero_numpy != 0]
+        flattened = tensor.abs().cpu().numpy().flatten()
         
-        threshold = np.quantile(abs_nonzero_numpy, sparsity)
+        threshold = np.quantile(flattened, sparsity)
     mask = (tensor.abs() > threshold).to(torch.bool).to(tensor.device)
     return mask
 
@@ -111,12 +110,14 @@ def channel_l1(tensor: torch.Tensor, info: dict, sparsity: float) -> torch.Tenso
         return
 
 def global_weight_l1(tensor: torch.Tensor, info: dict, sparsity: float):
-    tensors = [v["weight_actual_value"] for _, v in info.items() if v is not None]
-
+    masks = [v["weight_masks"] for _, v in info.items() if v is not None]
+    masks = [(torch.all(torch.stack(list(m.values())), dim=0) if m is not None else 1) for m in masks]
+    tensors = [v["weight_value"] for _, v in info.items() if v is not None]
+    tensors_to_prune = [tensor * mask for (mask, tensor) in zip(masks, tensors)]
+    
     with torch.no_grad():
-        flattened_tensors = [t.abs().cpu().numpy().flatten() for t in tensors]
+        flattened_tensors = [t.abs().cpu().numpy().flatten() for t in tensors_to_prune]
         flattened_tensor = np.concatenate(flattened_tensors, axis=0)
-        flattened_tensor = flattened_tensor[flattened_tensor != 0]
         
         threshold = np.quantile(flattened_tensor, sparsity)
 

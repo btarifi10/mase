@@ -4,3 +4,5 @@ from .save_and_load import (
     save_mase_graph_interface_pass,
     save_node_meta_param_interface_pass,
 )
+
+from .huffman import huffman_encode_pass, load_huffman_encoded_model

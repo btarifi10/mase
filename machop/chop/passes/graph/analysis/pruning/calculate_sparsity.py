@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from chop.passes.graph.analysis.utils import fetch_attr, load_arg
 
@@ -31,9 +32,16 @@ def graph_iterator_for_metadata(graph, dummy_in=None, add_value=True):
             result = modules[node.target](*args, **kwargs)
 
             meta = node.meta["mase"]
-            if isinstance(modules[node.target], (torch.nn.Conv2d, torch.nn.Linear)):
+            if isinstance(modules[node.target], (torch.nn.Conv2d, torch.nn.Linear, torch.nn.Conv1d)):
                 # parameterizations is a list, we assume we only have one single entry
-                mask = modules[node.target].parametrizations.weight[0].mask
+                weight_parametrizations = modules[node.target].parametrizations.weight
+                masks = {
+                    i: weight_parametrizations[i].mask for i in range(len(weight_parametrizations))
+                }
+                stacked_masks = torch.stack([torch.tensor(m) for m in masks.values()])
+                mask = torch.all(stacked_masks, dim=0)
+
+                # mask = modules[node.target].parametrizations.weight[0].mask
                 weight_sparsity = 1 - float(mask.sum() / mask.numel())
                 meta.parameters["software"]["args"]["weight"][
                     "sparsity"
@@ -46,9 +54,12 @@ def graph_iterator_for_metadata(graph, dummy_in=None, add_value=True):
                 ] = act_sparsity
                 if add_value:
                     meta.parameters["software"]["args"]["weight"]["mask_value"] = mask
-                    meta.parameters["software"]["args"]["weight_mask"][
-                        "value"
-                    ] = act_mask
+                    meta.parameters["software"]["args"]["weight_mask"] = {
+                        "value": masks
+                    }
+                    meta.parameters["software"]["args"]["weight_mask_effective"] = {
+                        "value": mask
+                    }
                 sparsity_info[node.target] = {
                     "weight_sparsity": weight_sparsity,
                     "activation_sparsity": act_sparsity,
