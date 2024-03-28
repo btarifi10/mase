@@ -26,7 +26,7 @@ DEFAULT_PRUNE_CONFIG = {
             "scope": "global",
             "granularity": "elementwise",
             "method": "l1-norm",
-            "sparsity": 0.,
+            "sparsity": 0.5,
         },
         "train_config": {
             "max_epochs": 5,
@@ -152,11 +152,14 @@ class IterativePruningSpace(SearchSpaceBase):
             results = train_runner(self.data_module, self.model, None)
             train_metrics.append(results)
 
+            # Calculate the sparsity for the current iteration
             iteration_sparsity = 1 - (1-overall_sparsity)**((i+1)/num_iterations)
 
+            # Update the sparsity in the prune args
             prune_args["weight"]["sparsity"] = iteration_sparsity
             prune_args["activation"]["sparsity"] = iteration_sparsity
 
+            # Prune the model
             mg, _ = prune_transform_pass(mg, prune_args)
 
             # Copy the original weights and biases back to the model
@@ -165,10 +168,8 @@ class IterativePruningSpace(SearchSpaceBase):
                     with torch.no_grad():
                         mg.modules[node.target].weight.copy_(original_w_b[node.name]['weight'])
                         mg.modules[node.target].bias.copy_(original_w_b[node.name]['bias'])
-                        # node.meta["mase"].parameters["common"]["args"]["parametrizations.weight.original"]["value"] = original_w_b[node.name]['meta_weight']
-                        # node.meta["mase"].parameters["common"]["args"]["bias"]["value"] = original_w_b[node.name]['meta_bias']
-
-
+                        
+            # Run the analysis passes
             mg, _ = add_common_metadata_analysis_pass(mg, {"dummy_in": dummy_in, "force_device_meta": False})
             mg, _ = add_software_metadata_analysis_pass(mg, None)
             mg, _ = add_pruning_metadata_analysis_pass(mg, {"dummy_in": dummy_in, "add_value": True})

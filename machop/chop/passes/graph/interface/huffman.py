@@ -4,9 +4,6 @@ import json
 import torch
 import bitarray, os
 
-# from chop.passes.graph.analysis.add_metadata.add_common_metadata import add_common_metadata_analysis_pass
-# from chop.passes.graph.analysis.add_metadata.add_software_metadata import add_software_metadata_analysis_pass
-# from chop.passes.graph.analysis.init_metadata import init_metadata_analysis_pass
 from ..utils import get_node_actual_target
 
 def huffman_encode(freqs):
@@ -77,9 +74,11 @@ def huffman_encode_pass(mg, pass_args):
         os.makedirs(os.path.join(save_dir, "parameters"))
         os.makedirs(os.path.join(save_dir, "masks"))
 
+    # Flatten all parameters to get a unique set and frequency counter
     params = flatten_parameters(model, mg)
     freqs = Counter(params)
 
+    # Build the huffman tree
     global_huffman_codes = huffman_encode(freqs)
 
     huffman_codes_path = os.path.join(save_dir, "global_huffman_codes.json")
@@ -93,15 +92,17 @@ def huffman_encode_pass(mg, pass_args):
         module = get_node_actual_target(node)
         if node.target in mg.modules:
             named_params_node = get_named_params(f"{node.target}.", named_params)      
-            for name, param in module.named_parameters():
+            for name, _ in module.named_parameters():
                 actual_name, actual_param = get_named_params(name, named_params_node)[0]
                 actual_module = find_module_of_parameter(model, actual_name)
-                if isinstance(actual_module, torch.nn.utils.parametrize.ParametrizationList) and "weight" in actual_name:
-                    actual_param = actual_param * actual_module[0].mask.to(actual_param.dtype)
+                # If the model is quantized, apply the quantization
                 if hasattr(module, "w_quantizer"):
                     actual_param = module.w_quantizer(actual_param)
                 if hasattr(module, "b_quantizer"):
                     actual_param = module.b_quantizer(actual_param)
+                # If the module is pruned, apply the mask
+                if isinstance(actual_module, torch.nn.utils.parametrize.ParametrizationList) and "weight" in actual_name:
+                    actual_param = actual_param * actual_module[0].mask.to(actual_param.dtype)
                 
                 actual_param_values = actual_param.flatten().tolist()
                 # Encode using global Huffman codes
@@ -109,7 +110,6 @@ def huffman_encode_pass(mg, pass_args):
                 ba = bitarray.bitarray(encoded_values)
                 
                 # Save encoded parameters
-                # encoded_file_path = os.path.join(save_dir, "parameters", f"{actual_name}.bin")
                 encoded_file_path = os.path.join(save_dir, "parameters", f"{node.target}.{name}.{len(ba)}.bin")
 
                 with open(encoded_file_path, 'wb') as encoded_file:
@@ -130,10 +130,10 @@ def decode_huffman(encoded_data, huffman_codes):
 
 def load_huffman_encoded_model(mg, pass_args):
     load_dir = pass_args['load_dir']
-    dummy_in = pass_args['dummy_in']
 
     model = mg.model
 
+    # Load the huffman codes
     with open(f"{load_dir}/global_huffman_codes.json", 'r') as file:
         huffman_codes = json.load(file)
 
@@ -141,6 +141,7 @@ def load_huffman_encoded_model(mg, pass_args):
 
     for name, param in model.named_parameters():
         file_name = None
+        # Find the file associated with the parameter
         for file in encoded_parameter_files:
             if file.startswith(name):
                 file_name = file
@@ -148,23 +149,22 @@ def load_huffman_encoded_model(mg, pass_args):
         
         if file_name is None:
             continue
-
+        
+        # Load the file
         encoded_file_path = os.path.join(load_dir, "parameters", file_name)
         num_bits = int(file_name.split('.')[-2])
-
         with open(encoded_file_path, 'rb') as encoded_file:
             encoded_data = bitarray.bitarray()
+            # Load the encoded data
             encoded_data.fromfile(encoded_file)
+            # Extract the number of bits
             encoded_data = encoded_data[:num_bits]
+            # Decode the data
             decoded_data = decode_huffman(encoded_data, huffman_codes)
             decoded_data = torch.tensor(decoded_data)
             decoded_data = decoded_data.view(param.shape)
             param.data = decoded_data
 
     mg.model = model
-
-    # mg, _ = init_metadata_analysis_pass(mg, None)
-    # mg, _ = add_common_metadata_analysis_pass(mg, {"dummy_in": dummy_in})
-    # mg, _ = add_software_metadata_analysis_pass(mg, None)
 
     return mg, {}
