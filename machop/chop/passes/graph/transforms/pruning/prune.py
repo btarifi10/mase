@@ -1,3 +1,4 @@
+from pprint import pprint
 import torch
 
 from .load import load_activation_prune_config, load_weight_prune_config
@@ -55,7 +56,7 @@ def build_pruning_hooks(info, w_config, a_config):
                 "module_type": v["module_type"],
                 "weight_sparsity": w_config["sparsity"],
                 "value": v["weight_value"],
-                "actual_value": v["weight_actual_value"],
+                "masks": v["weight_masks"],
                 "stats": v["weight_stats"],
                 "shape": v["weight_shape"],
             }
@@ -75,58 +76,37 @@ def build_pruning_hooks(info, w_config, a_config):
 
 
 def fetch_info(node, module):
-    # deal with conv2d
     if isinstance(module, torch.nn.Conv2d):
+        module_type = "conv2d"
+    elif isinstance(module, torch.nn.Conv1d):
+        module_type = "conv1d"
+    elif isinstance(module, torch.nn.Linear):
+        module_type = "linear"
+    else:
+        module_type = None
+
+    # Deal with supported types
+    if module_type in ["linear", "conv2d", "conv1d"]:
         a_value = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["value"]
         a_stats = node.meta["mase"].parameters["software"]["args"]["data_in_0"]["stat"]
         a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
 
-        w_actual_value = module.weight
-        w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
-        w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
-        w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
-        return {
-            "module_type": "conv2d",
-            "weight_actual_value": w_actual_value,
-            "weight_value": w_value,
-            "weight_stats": w_stats,
-            "weight_shape": w_shape,
-            "activation_value": a_value,
-            "activation_stats": a_stats,
-            "activation_shape": a_shape,
-        }
-    #Conv1d
-    if isinstance(module, torch.nn.Conv1d):
-        a_value = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["value"]
-        a_stats = node.meta["mase"].parameters["software"]["args"]["data_in_0"]["stat"]
-        a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
+        if "weight_mask" in node.meta["mase"].parameters["software"]["args"]:
+            w_masks = node.meta["mase"].parameters["software"]["args"]["weight_mask"]["value"]
+        else:
+            w_masks = None
 
-        w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
-        w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
-        w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
-        return {
-            "module_type": "conv1d",
-            "weight_value": w_value,
-            "weight_stats": w_stats,
-            "weight_shape": w_shape,
-            "activation_value": a_value,
-            "activation_stats": a_stats,
-            "activation_shape": a_shape,
-        }
-    # deal with linear
-    if isinstance(module, torch.nn.Linear):
-        a_value = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["value"]
-        a_stats = node.meta["mase"].parameters["software"]["args"]["data_in_0"]["stat"]
-        a_shape = node.meta["mase"].parameters["common"]["args"]["data_in_0"]["shape"]
+        if "parametrizations.weight.original" in node.meta["mase"].parameters["common"]["args"]:
+            weight_key = "parametrizations.weight.original"
+        else:
+            weight_key = "weight"
 
-        w_actual_value = module.weight
-        w_value = node.meta["mase"].parameters["common"]["args"]["weight"]["value"]
-        w_stats = node.meta["mase"].parameters["software"]["args"]["weight"]["stat"]
-        w_shape = node.meta["mase"].parameters["common"]["args"]["weight"]["shape"]
-        print(node.meta["mase"].parameters["common"]["args"])
+        w_value = node.meta["mase"].parameters["common"]["args"][weight_key]["value"]
+        w_stats = node.meta["mase"].parameters["software"]["args"][weight_key]["stat"]
+        w_shape = node.meta["mase"].parameters["common"]["args"][weight_key]["shape"]
         return {
-            "module_type": "linear",
-            "weight_actual_value": w_actual_value,
+            "module_type": module_type,
+            "weight_masks": w_masks,
             "weight_value": w_value,
             "weight_stats": w_stats,
             "weight_shape": w_shape,

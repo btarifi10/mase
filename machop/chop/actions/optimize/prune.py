@@ -1,6 +1,7 @@
 import logging
 from math import ceil
 from os import PathLike
+from pprint import pprint
 
 from tqdm import tqdm
 from chop.actions.search.strategies.runners.software import get_sw_runner
@@ -12,6 +13,7 @@ from chop.passes.graph.analysis.add_metadata.add_software_metadata import add_so
 from chop.passes.graph.analysis.init_metadata import init_metadata_analysis_pass
 from chop.passes.graph.utils import get_mase_op
 import copy, torch
+from torch.utils.tensorboard import SummaryWriter
 from chop.actions import test, train
 from chop.passes.graph.transforms import (
     prune_transform_pass,
@@ -23,6 +25,19 @@ from chop.tools.utils import parse_accelerator
 
 logger = logging.getLogger(__name__)
 
+def calculate_pruned_percentage(model: torch.nn.Module):
+    """
+    Calculate the pruned percentage of a model.
+    """
+    total = 0
+    pruned = 0
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Conv2d) or isinstance(module, torch.nn.Linear):
+            with torch.no_grad():
+                flattened_weight = module.weight.flatten()
+                total += flattened_weight.numel()
+                pruned += torch.sum(flattened_weight == 0).item()
+    return pruned / total
 
 def parse_prune_config(prune_config):
     """
@@ -73,8 +88,6 @@ def prune_iterative(
     overall_sparsity = pruning_config["sparsity"]
     num_iterations = pruning_config["num_iterations"]
 
-    iteration_sparsity = 1 - ((1 - overall_sparsity)**(1 / num_iterations))
-
     data_module.prepare_data()
     data_module.setup()
     dummy_in = {"x": next(iter(data_module.train_dataloader()))[0]}
@@ -102,13 +115,11 @@ def prune_iterative(
             "scope": pruning_config["scope"],
             "granularity": pruning_config["granularity"],
             "method": pruning_config["method"],
-            "sparsity": iteration_sparsity,
         },
         "activation": {
             "scope": pruning_config["scope"],
             "granularity": pruning_config["granularity"],
             "method": pruning_config["method"],
-            "sparsity": iteration_sparsity,
         },
     }
 
@@ -127,23 +138,34 @@ def prune_iterative(
 
     num_nodes = len([node for node in mg.fx_graph.nodes if get_mase_op(node) in ["linear", "conv2d", "conv1d"]])
 
-    with tqdm(total=num_iterations*num_nodes) as pbar:
-        pbar.set_description(f"Pruning model {num_iterations} times")
-        
+    if visualizer and isinstance(visualizer, SummaryWriter):
+        visualizer.add_scalar("pruned_percentage", 0, 0)
+
+    with tqdm(total=num_iterations*num_nodes) as pbar:        
         for i in tqdm(range(num_iterations)):
             results = train_runner(data_module, model, None)
             train_metrics.append(results)
 
-            logger.info("")
+            if visualizer and isinstance(visualizer, SummaryWriter):
+                visualizer.add_scalar("loss", results['loss'], i)
+                visualizer.add_scalar("accuracy", results['accuracy'], i)
+
+            iteration_sparsity = 1 - (1-overall_sparsity)**((i+1)/num_iterations)
+
+            prune_args["weight"]["sparsity"] = iteration_sparsity
+            prune_args["activation"]["sparsity"] = iteration_sparsity
  
             mg, _ = prune_transform_pass(mg, prune_args)
 
-            # copy the weights from the original model to the pruned model
+            pruned_percentage = calculate_pruned_percentage(mg.model)
+            
+            if visualizer and isinstance(visualizer, SummaryWriter):
+                visualizer.add_scalar("pruned_percentage", pruned_percentage, i+1)
+
             for node in tqdm(mg.fx_graph.nodes):
                 if get_mase_op(node) in ["linear", "conv2d", "conv1d"]:
                     with torch.no_grad():
                         mg.modules[node.target].weight.copy_(original_w_b[node.name]['weight'])
-                        # mg.modules[node.target].weight.copy_(original_w_b[node.name]['weight'])
 
                         mg.modules[node.target].bias.copy_(original_w_b[node.name]['bias'])
 
@@ -153,7 +175,12 @@ def prune_iterative(
                         node.meta["mase"].parameters["common"]["args"]["bias"]["value"] = original_w_b[node.name]['meta_bias']
 
         results = train_runner(data_module, model, None)
+        if visualizer and isinstance(visualizer, SummaryWriter):
+            visualizer.add_scalar("loss", results['loss'], num_iterations)
+            visualizer.add_scalar("accuracy", results['accuracy'], num_iterations)
+            visualizer.flush()
+
         train_metrics.append(results)
         # test(**train_test_args)
 
-        return model, train_metrics
+        return model, mg, train_metrics

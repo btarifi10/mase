@@ -181,6 +181,10 @@ def transform(
                     "data_path": pass_config["data_path"],
                 }
                 graph, _ = PASSES[pass_name](graph, **kwargs)
+            case "huffman_encode":
+                graph, _ = PASSES[pass_name](graph, pass_args=pass_config)
+            case "huffman_decode":
+                graph, _ = PASSES[pass_name](graph, pass_args=pass_config)
             case _:
                 my_pass = PASSES[pass_name]
                 graph, _ = my_pass(graph, pass_args=pass_config)

@@ -34,7 +34,10 @@ from .interface import (
     save_mase_graph_interface_pass,
     save_node_meta_param_interface_pass,
     load_node_meta_param_interface_pass,
+    huffman_encode_pass,
+    load_huffman_encoded_model
 )
+
 
 from .transforms.quantize import quantized_func_map, quantized_module_map
 from .transforms.quantize.quant_parsers import parse_node_config
@@ -63,7 +66,8 @@ TRANSFORM_PASSES = [
     "quantize",
     "summarize_quantization",
     "prune",
-    "prune_detach_hook" "conv_bn_fusion",
+    "prune_detach_hook",
+    "conv_bn_fusion",
     "logicnets_fusion",
 ]
 
@@ -72,6 +76,8 @@ INTERFACE_PASSES = [
     "load_node_meta_param",
     "save_mase_graph",
     "save_node_meta_param",
+    "huffman_encode",
+    "load_huffman_model",
 ]
 
 PASSES = {
@@ -98,6 +104,8 @@ PASSES = {
     "load_node_meta_param": load_node_meta_param_interface_pass,
     "save_mase_graph": save_mase_graph_interface_pass,
     "save_node_meta_param": save_node_meta_param_interface_pass,
+    "huffman_encode": huffman_encode_pass,
+    "load_huffman_model": load_huffman_encoded_model,
     # transform
     "quantize": quantize_transform_pass,
     "summarize_quantization": summarize_quantization_analysis_pass,
@@ -106,5 +114,5 @@ PASSES = {
     # "remove_prune_wrappers": prune_unwrap_transform_pass,
     "conv_bn_fusion": conv_bn_fusion_transform_pass,
     "logicnets_fusion": logicnets_fusion_transform_pass,
-    "onnx_annotate": onnx_annotate_transform_pass,
+    "onnx_annotate": onnx_annotate_transform_pass
 }

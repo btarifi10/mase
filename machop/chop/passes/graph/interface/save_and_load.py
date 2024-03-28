@@ -1,13 +1,12 @@
 import logging
 import os
-import numpy as np
+import pickle
 
 import toml
 import torch
 import torch.fx as fx
 from chop.passes.graph.analysis.init_metadata import init_metadata_analysis_pass
 from chop.tools.config_load import convert_none_to_str_na, convert_str_na_to_none
-
 
 logger = logging.getLogger(__name__)
 
@@ -114,8 +113,12 @@ def load_node_meta_param_interface_pass(graph, pass_args: str):
     graph = graph_iterator_add_n_meta_param(graph, node_n_meta_param)
     return graph
 
+def save_pickle(graph_module: fx.GraphModule, save_path: str) -> None:
+    #Loading pickle_not yet implemented
+    with open(save_path, 'wb') as file:
+        pickle.dump(graph_module, file)
 
-def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_graph=None):
+def save_mase_graph_interface_pass(graph, pass_args: dict = {}):
     """Save a mase graph.
 
     This saves the graph module as a serialized graph module and metadata.parameters as a toml file.
@@ -127,11 +130,18 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_
     Returns:
         MaseGraph: mase_graph
     """
-    save_dir = pass_args
+    transformed=None
+    if isinstance(pass_args, dict):
+        if "activations" in pass_args.keys():
+            transformed=pass_args["activations"]
+        save_dir=pass_args["save_dir"]
+    else:
+        save_dir = pass_args
     os.makedirs(save_dir, exist_ok=True)
     graph_module_ckpt = os.path.join(save_dir, "graph_module.mz")
     state_dict_ckpt = os.path.join(save_dir, "state_dict.pt")
     n_meta_param_ckpt = os.path.join(save_dir, "node_meta_param.toml")
+    pickle_ckpt = os.path.join(save_dir, "pickle_save.pkl")
     # collect metadata.parameters
     node_n_meta_param = collect_n_meta_param(graph)
     # save metadata.parameters to toml
@@ -140,9 +150,10 @@ def save_mase_graph_interface_pass(graph, pass_args: dict = {}, pre_transformed_
     #print(graph.model.state_dict())
     graph = graph_iterator_remove_metadata(graph)
     # save graph module & state dict
-    if pre_transformed_graph is None:
+    if transformed is None:
         save_graph_module_ckpt(graph.model, graph_module_ckpt,)
-    save_state_dict_ckpt(graph.model, state_dict_ckpt)
+    save_state_dict_ckpt(graph.model, state_dict_ckpt, transformed)
+    save_pickle(graph.model, pickle_ckpt)
     # restore metadata.parameters
     graph, _ = init_metadata_analysis_pass(graph)
     graph = graph_iterator_add_n_meta_param(graph, node_n_meta_param)

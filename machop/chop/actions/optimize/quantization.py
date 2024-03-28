@@ -85,6 +85,6 @@ def quantize_model(
 
     mg, _ = quantize_transform_pass(mg, pruning_config)
 
-    results = train_runner(data_module, model, training_config)
+    results = train_runner(data_module, mg.model, training_config)
 
-    return model, results
+    return model, mg, results

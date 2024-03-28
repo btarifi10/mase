@@ -1,5 +1,6 @@
 from .transformation.linear import LinearChannelMultiplierSpace
 from .transformation.conv2d import Conv2dChannelMultiplierSpace
+from .pruning import IterativePruningSpace
 from .quantization import (
     ManualHFModuleSearchSpaceMixedPrecisionPTQ,
     GraphSearchSpaceMixedPrecisionPTQ,
@@ -14,6 +15,7 @@ SEARCH_SPACE_MAP = {
     "transform/linear_channel_multiplier": LinearChannelMultiplierSpace,
     "transform/conv2d_channel_multiplier": Conv2dChannelMultiplierSpace,
     "graph/hardware/systolic_mapping": SystolicMappingSearchSpace,
+    "prune/iterative": IterativePruningSpace,
 }
 
 
