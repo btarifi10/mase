@@ -74,12 +74,12 @@ def channel_l1(tensor: torch.Tensor, info: dict, sparsity: float) -> torch.Tenso
     :return: a sparsity mask
     :rtype: torch.Tensor
     """
-    print(tensor.dim())
+    
     if (tensor.dim() == 2):
         # It's a linear layer tensor; create a mask of True values
         mask = torch.ones_like(tensor, dtype=torch.bool).to(tensor.device)
         return mask
-    #print("tensor:",tensor)
+    
 
     elif (tensor.dim() == 3):
         

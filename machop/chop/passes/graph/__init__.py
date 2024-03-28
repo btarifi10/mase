@@ -20,6 +20,7 @@ from .analysis import (
 from .transforms import (
     prune_transform_pass,
     prune_detach_hook_transform_pass,
+    activation_pruning_pass,
     # prune_unwrap_transform_pass,
     quantize_transform_pass,
     summarize_quantization_analysis_pass,
